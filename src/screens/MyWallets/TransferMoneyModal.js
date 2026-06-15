@@ -8,9 +8,10 @@ import { transferBetweenWallets } from "../../store/slices/walletSlice";
 import WalletCard from "../../components/common/WalletCard";
 import BottomSheet from "../../components/common/BottomSheet";
 import Toast       from "../../components/common/Toast";
-import { colors }     from "../../theme/colors";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 export default function TransferMoneyModal({ navigation }) {
   const dispatch = useDispatch();
@@ -77,7 +78,7 @@ export default function TransferMoneyModal({ navigation }) {
           </View>
 
           {/* Ví đích */}
-          <TouchableOpacity style={[styles.walletBox, { borderColor: "#3B82F6" }]} onPress={() => setShowTo(true)}>
+          <TouchableOpacity style={[styles.walletBox, { borderColor: colors.info }]} onPress={() => setShowTo(true)}>
             <Text style={styles.boxLabel}>Đến ví</Text>
             <Text style={styles.boxName}>{toWallet?.name}</Text>
             <Text style={styles.boxBalance}>{toWallet?.balance.toLocaleString("vi-VN")}₫</Text>
@@ -117,9 +118,11 @@ export default function TransferMoneyModal({ navigation }) {
         onPress={handleTransfer}
         disabled={status === "pending"}
       >
-        <Text style={styles.confirmText}>
-          {status === "pending" ? "Đang chuyển..." : "↔️  Xác nhận chuyển tiền"}
-        </Text>
+        <LinearGradient colors={gradients.forest} style={styles.confirmGradient}>
+          <Text style={styles.confirmText}>
+            {status === "pending" ? "Đang chuyển..." : "↔️  Xác nhận chuyển tiền"}
+          </Text>
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* From picker */}
@@ -148,25 +151,26 @@ export default function TransferMoneyModal({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: "#F4F6F9" },
-  header:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: spacing.sm, backgroundColor: "#fff" },
-  closeBtn:    { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" },
-  closeIcon:   { fontSize: 14, color: colors.textPrimary, fontWeight: "600" },
-  title:       { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  arrowRow:    { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.base, paddingVertical: spacing.lg },
-  walletBox:   { flex: 1, backgroundColor: "#fff", borderRadius: 16, padding: spacing.md, borderWidth: 1.5, borderColor: colors.primary, alignItems: "center" },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  closeBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  closeIcon: { fontSize: 14, color: colors.textPrimary, fontFamily: typography.family.semiBold },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  arrowRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingVertical: spacing.lg },
+  walletBox: { flex: 1, backgroundColor: colors.surface, borderRadius: borderRadius.xl, padding: spacing.base, borderWidth: 1.5, borderColor: colors.primary, alignItems: "center", ...shadows.soft },
   boxLabel:    { fontSize: typography.fontSize.xs, color: colors.textSecondary, marginBottom: 4 },
-  boxName:     { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
+  boxName: { fontSize: typography.fontSize.md, fontFamily: typography.family.bold, color: colors.textPrimary, textAlign: "center" },
   boxBalance:  { fontSize: typography.fontSize.sm, color: colors.primary, marginTop: 4 },
   arrowWrap:   { paddingHorizontal: spacing.sm },
   arrow:       { fontSize: 28, color: colors.primary },
-  amountCard:  { marginHorizontal: spacing.base, backgroundColor: "#fff", borderRadius: 16, padding: spacing.base, marginBottom: spacing.md, alignItems: "center" },
+  amountCard: { marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, alignItems: "center", borderWidth: 1, borderColor: colors.border, ...shadows.soft },
   amtLabel:    { fontSize: typography.fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm },
-  amtInput:    { fontSize: 36, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, textAlign: "center", minWidth: 120 },
+  amtInput: { fontSize: 36, fontFamily: typography.family.bold, color: colors.textPrimary, textAlign: "center", minWidth: 120 },
   amtCurrency: { fontSize: typography.fontSize.sm, color: colors.textSecondary, marginTop: 4 },
-  noteCard:    { flexDirection: "row", alignItems: "center", marginHorizontal: spacing.base, backgroundColor: "#fff", borderRadius: 14, padding: spacing.md, marginBottom: spacing.md },
-  noteEmoji:   { fontSize: 18, marginRight: spacing.md },
+  noteCard: { flexDirection: "row", alignItems: "center", marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.base, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  noteEmoji:   { fontSize: 18, marginRight: spacing.base },
   noteInput:   { flex: 1, fontSize: typography.fontSize.md, color: colors.textPrimary },
-  confirmBtn:  { marginHorizontal: spacing.base, marginBottom: spacing.lg, backgroundColor: colors.primary, borderRadius: 14, padding: spacing.lg, alignItems: "center" },
-  confirmText: { color: "#fff", fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semiBold },
+  confirmBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, overflow: "hidden", ...shadows.lifted },
+  confirmGradient: { paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center" },
+  confirmText: { color: "#fff", fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold },
 });

@@ -3,14 +3,16 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector } from "react-redux";
 import CircularProgress from "../../components/common/CircularProgress";
-import { colors }     from "../../theme/colors";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 const FILTERS = ["Tháng này", "Tháng trước", "3 tháng"];
-const CAT_COLORS = ["#22C55E", "#3B82F6", "#F59E0B", "#EC4899", "#A855F7", "#14B8A6", "#EF4444", "#F97316"];
+const CAT_COLORS = ["#2F7D5A", "#4E93B6", "#D8A85B", "#C78365", "#8FBF8F", "#65A99A", "#D85C4A", "#8B6A4E"];
 
 export default function Statistics() {
   const [filter, setFilter] = useState("Tháng này");
@@ -95,18 +97,18 @@ export default function Statistics() {
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
           <View style={styles.avatar}><Text style={styles.avatarText}>📈</Text></View>
           <Text style={styles.name}>Thống kê</Text>
-        </View>
+        </Animated.View>
 
         {/* Title + period label */}
-        <View style={styles.titleRow}>
+        <Animated.View entering={FadeInUp.duration(480)} style={styles.titleRow}>
           <Text style={styles.title}>Phân tích chi tiêu</Text>
           <View style={styles.periodBadge}>
             <Text style={styles.periodText}>{label}</Text>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Filter tabs */}
         <View style={styles.filterRow}>
@@ -123,7 +125,8 @@ export default function Statistics() {
 
         {/* Summary cards */}
         <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { borderLeftColor: colors.expense, borderLeftWidth: 3 }]}>
+          <View style={styles.summaryCard}>
+            <LinearGradient colors={gradients.expense} style={styles.summaryGradient}>
             <Text style={styles.summaryLabel}>Tổng chi</Text>
             <Text style={[styles.summaryValue, { color: colors.expense }]}>
               {(totalChi / 1000000).toFixed(2)}M
@@ -133,8 +136,10 @@ export default function Statistics() {
                 {Number(chiChange) >= 0 ? `▲ ${chiChange}%` : `▼ ${Math.abs(chiChange)}%`} so với trước
               </Text>
             )}
+            </LinearGradient>
           </View>
-          <View style={[styles.summaryCard, { borderLeftColor: colors.income, borderLeftWidth: 3 }]}>
+          <View style={styles.summaryCard}>
+            <LinearGradient colors={gradients.income} style={styles.summaryGradient}>
             <Text style={styles.summaryLabel}>Tổng thu</Text>
             <Text style={[styles.summaryValue, { color: colors.income }]}>
               {(totalThu / 1000000).toFixed(2)}M
@@ -144,6 +149,7 @@ export default function Statistics() {
                 {Number(thuChange) >= 0 ? `▲ ${thuChange}%` : `▼ ${Math.abs(thuChange)}%`} so với trước
               </Text>
             )}
+            </LinearGradient>
           </View>
         </View>
 
@@ -195,36 +201,37 @@ export default function Statistics() {
 }
 
 const styles = StyleSheet.create({
-  safe:             { flex: 1, backgroundColor: "#F4F6F9" },
-  header:           { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  avatar:           { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center", marginRight: spacing.sm },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.sm },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceAlt, justifyContent: "center", alignItems: "center", marginRight: spacing.sm, borderWidth: 1, borderColor: colors.border },
   avatarText:       { fontSize: 20 },
-  name:             { flex: 1, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semiBold, color: colors.textPrimary },
-  titleRow:         { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.base, marginBottom: spacing.sm },
-  title:            { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  periodBadge:      { backgroundColor: "#fff", borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 4, borderWidth: 1, borderColor: colors.border },
-  periodText:       { fontSize: typography.fontSize.sm, color: colors.textPrimary },
-  filterRow:        { flexDirection: "row", paddingHorizontal: spacing.base, gap: spacing.sm, marginBottom: spacing.md },
-  filterBtn:        { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border },
+  name: { flex: 1, fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.md, marginBottom: spacing.md, gap: spacing.sm },
+  title: { flex: 1, fontSize: typography.fontSize.xl, fontFamily: typography.family.bold, color: colors.textPrimary },
+  periodBadge: { backgroundColor: colors.surface, borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderWidth: 1, borderColor: colors.border },
+  periodText: { fontSize: typography.fontSize.sm, color: colors.textPrimary, fontFamily: typography.family.medium },
+  filterRow: { flexDirection: "row", paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.md },
+  filterBtn: { paddingHorizontal: spacing.base, paddingVertical: spacing.xs, borderRadius: borderRadius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   filterActive:     { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText:       { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontWeight: typography.fontWeight.medium },
+  filterText: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
   filterTextActive: { color: "#fff" },
-  summaryRow:       { flexDirection: "row", paddingHorizontal: spacing.base, gap: spacing.sm, marginBottom: spacing.md },
-  summaryCard:      { flex: 1, backgroundColor: "#fff", borderRadius: 12, padding: spacing.md },
-  summaryLabel:     { fontSize: typography.fontSize.sm, color: colors.textSecondary },
-  summaryValue:     { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, marginTop: 4 },
+  summaryRow: { flexDirection: "row", paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.lg },
+  summaryCard: { flex: 1, borderRadius: borderRadius.xl, overflow: "hidden", borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  summaryGradient: { padding: spacing.base, minHeight: 118 },
+  summaryLabel: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
+  summaryValue: { fontSize: typography.fontSize.xl, fontFamily: typography.family.bold, marginTop: 4 },
   summaryChange:    { fontSize: 10, color: colors.textSecondary, marginTop: 4 },
-  card:             { marginHorizontal: spacing.base, backgroundColor: "#fff", borderRadius: 16, padding: spacing.base, marginBottom: spacing.md },
-  cardTitle:        { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semiBold, color: colors.textPrimary, marginBottom: spacing.md },
+  card: { marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, borderColor: colors.border, borderWidth: 1, ...shadows.soft },
+  cardTitle: { fontSize: typography.fontSize.md, fontFamily: typography.family.bold, color: colors.textPrimary, marginBottom: spacing.base },
   circleWrap:       { alignItems: "center", paddingVertical: spacing.sm },
   catRow:           { flexDirection: "row", alignItems: "center", marginBottom: spacing.sm },
   catDot:           { width: 10, height: 10, borderRadius: 5, marginRight: spacing.sm },
   catName:          { fontSize: typography.fontSize.sm, color: colors.textPrimary, width: 80 },
-  catBarWrap:       { flex: 1, height: 8, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden", marginHorizontal: spacing.sm },
+  catBarWrap: { flex: 1, height: 8, backgroundColor: colors.surfaceAlt, borderRadius: 99, overflow: "hidden", marginHorizontal: spacing.sm },
   catBar:           { height: "100%", borderRadius: 99 },
-  catAmt:           { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium, color: colors.textPrimary, textAlign: "right" },
+  catAmt: { fontSize: typography.fontSize.xs, fontFamily: typography.family.medium, color: colors.textPrimary, textAlign: "right" },
   catPct:           { fontSize: 9, color: colors.textSecondary, textAlign: "right" },
-  empty:            { alignItems: "center", paddingVertical: spacing.xl ?? 32 },
-  emptyEmoji:       { fontSize: 48, marginBottom: spacing.md },
+  empty:            { alignItems: "center", paddingVertical: 24 ?? 32 },
+  emptyEmoji:       { fontSize: 48, marginBottom: spacing.base },
   emptyText:        { fontSize: typography.fontSize.md, color: colors.textSecondary },
 });

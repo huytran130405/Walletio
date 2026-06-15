@@ -6,11 +6,12 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { updateBudget } from "../../store/slices/budgetSlice";
 import Toast from "../../components/common/Toast";
-import { colors }     from "../../theme/colors";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
-const COLORS = ["#22C55E", "#3B82F6", "#A855F7", "#F59E0B", "#EF4444", "#EC4899", "#14B8A6"];
+const COLORS = [colors.primary, colors.info, colors.accent, colors.clay, colors.expense, colors.secondaryDark, colors.earth];
 
 export default function EditBudgetModal({ navigation, route }) {
   const dispatch   = useDispatch();
@@ -98,36 +99,39 @@ export default function EditBudgetModal({ navigation, route }) {
         onPress={handleSave}
         disabled={status === "pending"}
       >
-        <Text style={styles.saveBtnText}>
-          {status === "pending" ? "Đang cập nhật..." : "Lưu thay đổi"}
-        </Text>
+        <LinearGradient colors={gradients.forest} style={styles.saveGradient}>
+          <Text style={styles.saveBtnText}>
+            {status === "pending" ? "Đang cập nhật..." : "Lưu thay đổi"}
+          </Text>
+        </LinearGradient>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe:          { flex: 1, backgroundColor: "#fff" },
-  header:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  closeBtn:      { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" },
-  closeIcon:     { fontSize: 14, color: colors.textPrimary, fontWeight: "600" },
-  title:         { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  catCard:       { marginHorizontal: spacing.base, backgroundColor: "#F9FAFB", borderRadius: 14, padding: spacing.base, marginBottom: spacing.md, marginTop: spacing.md },
-  catName:       { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  catGroup:      { fontSize: typography.fontSize.sm, color: colors.textSecondary, marginBottom: spacing.md },
-  progressTrack: { height: 8, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden", marginBottom: 6 },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  closeBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  closeIcon: { fontSize: 14, color: colors.textPrimary, fontFamily: typography.family.semiBold },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  catCard: { marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg, marginTop: spacing.base, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  catName: { fontSize: typography.fontSize.xl, fontFamily: typography.family.bold, color: colors.textPrimary },
+  catGroup:      { fontSize: typography.fontSize.sm, color: colors.textSecondary, marginBottom: spacing.base },
+  progressTrack: { height: 10, backgroundColor: colors.surfaceAlt, borderRadius: 99, overflow: "hidden", marginBottom: 6 },
   progressBar:   { height: "100%", borderRadius: 99 },
   progressLabels:{ flexDirection: "row", justifyContent: "space-between" },
   spentLabel:    { fontSize: typography.fontSize.xs, color: colors.textSecondary },
   limitLabel:    { fontSize: typography.fontSize.xs, color: colors.textSecondary },
-  form:          { paddingHorizontal: spacing.base },
-  label:         { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semiBold, color: colors.textSecondary, marginBottom: 6, marginTop: spacing.md },
-  amountRow:     { flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingRight: spacing.md },
-  amountInput:   { flex: 1, padding: spacing.md, fontSize: typography.fontSize.lg, color: colors.textPrimary, fontWeight: typography.fontWeight.bold },
+  form: { paddingHorizontal: spacing.md },
+  label: { fontSize: typography.fontSize.sm, fontFamily: typography.family.semiBold, color: colors.textSecondary, marginBottom: 6, marginTop: spacing.base },
+  amountRow: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.border, paddingRight: spacing.base },
+  amountInput: { flex: 1, padding: spacing.base, fontSize: typography.fontSize.lg, color: colors.textPrimary, fontFamily: typography.family.bold },
   amountCurrency:{ fontSize: typography.fontSize.sm, color: colors.textSecondary },
   colorRow:      { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   colorDot:      { width: 36, height: 36, borderRadius: 18 },
-  colorSelected: { borderWidth: 3, borderColor: "#fff", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
-  saveBtn:       { marginHorizontal: spacing.base, marginBottom: spacing.lg, backgroundColor: colors.primary, borderRadius: 14, padding: spacing.lg, alignItems: "center" },
-  saveBtnText:   { color: "#fff", fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semiBold },
+  colorSelected: { borderWidth: 3, borderColor: colors.surface, ...shadows.soft },
+  saveBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, overflow: "hidden", ...shadows.lifted },
+  saveGradient: { paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center" },
+  saveBtnText: { color: "#fff", fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold },
 });

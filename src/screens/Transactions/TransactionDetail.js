@@ -3,25 +3,26 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   SafeAreaView, Alert, ScrollView,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch } from "react-redux";
 import { deleteTransaction } from "../../store/slices/transactionSlice";
 import Toast from "../../components/common/Toast";
-import { colors }     from "../../theme/colors";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 const CATEGORY_ICONS = {
-  "Ăn uống":   { emoji: "🍜", bg: "#FEF3C7" },
-  "Nhà cửa":   { emoji: "🏠", bg: "#DBEAFE" },
-  "Di chuyển": { emoji: "🚗", bg: "#E0E7FF" },
-  "Giải trí":  { emoji: "🎮", bg: "#FCE7F3" },
-  "Mua sắm":   { emoji: "🛍️", bg: "#F3E8FF" },
-  "Lương":     { emoji: "💼", bg: "#DCFCE7" },
-  "Thưởng":    { emoji: "🎁", bg: "#DCFCE7" },
-  "Sức khoẻ":  { emoji: "💊", bg: "#DCFCE7" },
-  "Giáo dục":  { emoji: "📚", bg: "#E0F2FE" },
-  "Khác":      { emoji: "📦", bg: "#F1F5F9" },
-  "default":   { emoji: "💰", bg: "#F1F5F9" },
+  "Ăn uống": { emoji: "🍜", bg: "#F7E4BC" },
+  "Nhà cửa": { emoji: "🏠", bg: "#E8F4DC" },
+  "Di chuyển": { emoji: "🚗", bg: "#DDEFF5" },
+  "Giải trí": { emoji: "🎮", bg: "#FBE7E0" },
+  "Mua sắm": { emoji: "🛍️", bg: "#F4E8D8" },
+  "Lương": { emoji: "💼", bg: "#DFF4E8" },
+  "Thưởng": { emoji: "🎁", bg: "#E8F4DC" },
+  "Sức khoẻ": { emoji: "💊", bg: "#DFF4E8" },
+  "Giáo dục": { emoji: "📚", bg: "#E1F2F1" },
+  "Khác": { emoji: "📦", bg: "#EEF5EA" },
+  "default": { emoji: "💰", bg: "#EEF5EA" },
 };
 
 export default function TransactionDetail({ navigation, route }) {
@@ -101,7 +102,7 @@ export default function TransactionDetail({ navigation, route }) {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Amount hero */}
-        <View style={[styles.heroCard, { borderColor: amtColor }]}>
+        <LinearGradient colors={isIncome ? gradients.income : gradients.expense} style={[styles.heroCard, { borderColor: amtColor }]}>
           <View style={[styles.iconWrap, { backgroundColor: icon.bg }]}>
             <Text style={styles.iconEmoji}>{icon.emoji}</Text>
           </View>
@@ -114,7 +115,7 @@ export default function TransactionDetail({ navigation, route }) {
               {isIncome ? "Thu nhập" : "Chi phí"}
             </Text>
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Info rows */}
         <View style={styles.infoCard}>
@@ -141,25 +142,25 @@ export default function TransactionDetail({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safe:            { flex: 1, backgroundColor: "#F4F6F9" },
-  header:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  backBtn:         { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  backBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
   backIcon:        { fontSize: 18 },
-  title:           { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  deleteBtn:       { width: 36, height: 36, borderRadius: 18, backgroundColor: "#FEE2E2", justifyContent: "center", alignItems: "center" },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  deleteBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#FBEDE8", justifyContent: "center", alignItems: "center" },
   deleteIcon:      { fontSize: 16 },
-  heroCard:        { marginHorizontal: spacing.base, backgroundColor: "#fff", borderRadius: 20, padding: spacing.xl, alignItems: "center", marginBottom: spacing.md, borderWidth: 1.5 },
-  iconWrap:        { width: 72, height: 72, borderRadius: 20, justifyContent: "center", alignItems: "center", marginBottom: spacing.md },
+  heroCard: { marginHorizontal: spacing.md, borderRadius: borderRadius.xxl, padding: spacing.lg, alignItems: "center", marginBottom: spacing.lg, borderWidth: 1.5, ...shadows.soft },
+  iconWrap: { width: 76, height: 76, borderRadius: borderRadius.xl, justifyContent: "center", alignItems: "center", marginBottom: spacing.base },
   iconEmoji:       { fontSize: 36 },
-  description:     { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, marginBottom: spacing.sm, textAlign: "center" },
-  amount:          { fontSize: 32, fontWeight: typography.fontWeight.bold, marginBottom: spacing.sm },
-  typeBadge:       { paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
-  typeBadgeText:   { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semiBold },
-  infoCard:        { marginHorizontal: spacing.base, backgroundColor: "#fff", borderRadius: 16, paddingHorizontal: spacing.base, marginBottom: spacing.md },
-  infoRow:         { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.md },
+  description: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary, marginBottom: spacing.sm, textAlign: "center" },
+  amount: { fontSize: 32, fontFamily: typography.family.bold, marginBottom: spacing.sm },
+  typeBadge:       { paddingHorizontal: spacing.base, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  typeBadgeText: { fontSize: typography.fontSize.sm, fontFamily: typography.family.semiBold },
+  infoCard: { marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  infoRow:         { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.base },
   infoLabel:       { fontSize: typography.fontSize.sm, color: colors.textSecondary },
-  infoValue:       { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.medium, color: colors.textPrimary, maxWidth: "60%", textAlign: "right" },
-  divider:         { height: 1, backgroundColor: "#F3F4F6" },
-  editBtn:         { marginHorizontal: spacing.base, padding: spacing.lg, borderRadius: 14, borderWidth: 1.5, borderColor: colors.primary, alignItems: "center" },
-  editBtnText:     { color: colors.primary, fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semiBold },
+  infoValue: { fontSize: typography.fontSize.md, fontFamily: typography.family.medium, color: colors.textPrimary, maxWidth: "60%", textAlign: "right" },
+  divider: { height: 1, backgroundColor: colors.divider },
+  editBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, paddingVertical: spacing.base, paddingHorizontal: spacing.md, borderWidth: 1.5, borderColor: colors.primary, backgroundColor: colors.surfaceAlt, alignItems: "center" },
+  editBtnText: { color: colors.primary, fontSize: typography.fontSize.md, fontFamily: typography.family.semiBold },
 });

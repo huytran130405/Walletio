@@ -1,8 +1,9 @@
 import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../theme/colors";
+import { colors, gradients, shadows } from "../theme/colors";
 import { typography } from "../theme/typography";
 
 // Screens
@@ -43,9 +44,9 @@ function CustomTabBar({ state, descriptors, navigation }) {
         if (cfg?.isFAB) {
           return (
             <TouchableOpacity key={route.key} onPress={onPress} style={styles.fabWrap}>
-              <View style={styles.fab}>
+              <LinearGradient colors={gradients.forest} style={styles.fab}>
                 <Text style={styles.fabIcon}>＋</Text>
-              </View>
+              </LinearGradient>
             </TouchableOpacity>
           );
         }
@@ -79,34 +80,26 @@ export default function TabNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection:   "row",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth:  1,
-    borderTopColor:  "#F0F0F0",
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
     paddingTop:      10,
-    elevation:       10,
-    shadowColor:     "#000",
-    shadowOpacity:   0.08,
-    shadowRadius:    10,
-    shadowOffset:    { width: 0, height: -3 },
+    ...shadows.soft,
   },
   tabItem:        { flex: 1, alignItems: "center", justifyContent: "center", gap: 3 },
   tabEmoji:       { fontSize: 20, opacity: 0.4 },
   tabEmojiActive: { opacity: 1 },
-  tabLabel:       { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontWeight: typography.fontWeight.medium },
+  tabLabel:       { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
   tabLabelActive: { color: colors.primary },
   fabWrap:        { flex: 1, alignItems: "center", justifyContent: "center", marginTop: -18 },
   fab: {
     width:           52,
     height:          52,
     borderRadius:    26,
-    backgroundColor: colors.primary,
     justifyContent:  "center",
     alignItems:      "center",
     elevation:       6,
-    shadowColor:     colors.primary,
-    shadowOpacity:   0.4,
-    shadowRadius:    8,
-    shadowOffset:    { width: 0, height: 4 },
+    ...shadows.lifted,
   },
   fabIcon: { fontSize: 26, color: "#FFFFFF", fontWeight: "300", marginTop: -2 },
 });

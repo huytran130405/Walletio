@@ -3,9 +3,9 @@ import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   Animated, Dimensions, TouchableWithoutFeedback, ScrollView,
 } from "react-native";
-import { colors }     from "../../theme/colors";
+import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -63,11 +63,11 @@ export default function BottomSheet({ visible, onClose, title, snapHeight, child
 }
 
 const styles = StyleSheet.create({
-  overlay:  { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.4)" },
-  sheet:    { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: spacing.base, paddingBottom: spacing.xl },
-  handle:   { width: 40, height: 4, borderRadius: 2, backgroundColor: "#DDD", alignSelf: "center", marginTop: spacing.sm, marginBottom: spacing.sm },
-  header:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
-  title:    { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center" },
-  closeIcon:{ fontSize: 13, color: colors.textPrimary, fontWeight: "600" },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay },
+  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.surface, borderTopLeftRadius: borderRadius.xxl, borderTopRightRadius: borderRadius.xxl, paddingHorizontal: spacing.md, paddingBottom: spacing.lg, ...shadows.lifted },
+  handle: { width: 48, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: "center", marginTop: spacing.sm, marginBottom: spacing.md },
+  header:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.base },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceAlt, justifyContent: "center", alignItems: "center" },
+  closeIcon: { fontSize: 13, color: colors.textPrimary, fontFamily: typography.family.semiBold },
 });

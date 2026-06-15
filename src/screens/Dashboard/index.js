@@ -3,14 +3,16 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchTransactions, selectMonthlySummary, selectExpenseByCategory } from "../../store/slices/transactionSlice";
 import { fetchBudgets, selectTotalBudgetLimit }      from "../../store/slices/budgetSlice";
 import CircularProgress from "../../components/common/CircularProgress";
 import CategoryRow      from "../../components/common/CategoryRow";
-import { colors }     from "../../theme/colors";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 export default function Dashboard({ navigation }) {
   const dispatch = useDispatch();
@@ -57,7 +59,7 @@ export default function Dashboard({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* ── Header ── */}
-        <View style={styles.header}>
+        <Animated.View entering={FadeInDown.duration(450)} style={styles.header}>
           <View>
             <Text style={styles.greeting}>{greeting}</Text>
             <Text style={styles.username}>{user?.name ?? "Người dùng"} 👋</Text>
@@ -68,10 +70,11 @@ export default function Dashboard({ navigation }) {
           >
             <Text style={styles.settingsIcon}>⚙️</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* ── Budget card ── */}
-        <View style={styles.card}>
+        <Animated.View entering={FadeInUp.duration(520).springify()} style={styles.card}>
+          <LinearGradient colors={gradients.forest} style={styles.cardGlow}>
           {/* Ngân sách tháng */}
           <View style={styles.monthRow}>
             <Text style={styles.monthLabel}>Ngân sách tháng {month}</Text>
@@ -92,8 +95,10 @@ export default function Dashboard({ navigation }) {
                   ? `${(remaining / 1000000).toFixed(1)}tr₫`
                   : `-${(Math.abs(remaining) / 1000000).toFixed(1)}tr₫`
               }
-              color={remaining >= 0 ? colors.primary : colors.expense}
-              trackColor="#DCFCE7"
+              color={remaining >= 0 ? "#F7E4BC" : colors.expense}
+              trackColor="rgba(255,255,255,0.22)"
+              textColor={colors.textInverse}
+              labelColor="rgba(255,255,255,0.72)"
             />
             <View style={styles.statsCol}>
               <View style={styles.statItem}>
@@ -102,7 +107,7 @@ export default function Dashboard({ navigation }) {
                   {(totalBudget / 1000).toLocaleString("vi-VN")}₫
                 </Text>
               </View>
-              <View style={[styles.statItem, { marginTop: spacing.md }]}>
+              <View style={[styles.statItem, { marginTop: spacing.base }]}>
                 <Text style={styles.statLabel}>Đã chi tiêu</Text>
                 <Text style={[styles.statValue, { color: colors.expense }]}>
                   {(totalSpent / 1000).toLocaleString("vi-VN")}₫
@@ -114,28 +119,29 @@ export default function Dashboard({ navigation }) {
           {/* Action buttons */}
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: "#FEF2F2" }]}
+              style={[styles.actionBtn, { backgroundColor: "rgba(255,255,255,0.18)" }]}
               onPress={() => navigation.navigate("CreateTransaction", { initialType: "expense" })}
             >
               <Text style={styles.actionEmoji}>➖</Text>
-              <Text style={[styles.actionLabel, { color: colors.expense }]}>Chi phí</Text>
+              <Text style={styles.actionLabel}>Chi phí</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: "#ECFDF5" }]}
+              style={[styles.actionBtn, { backgroundColor: "rgba(255,255,255,0.18)" }]}
               onPress={() => navigation.navigate("CreateTransaction", { initialType: "income" })}
             >
               <Text style={styles.actionEmoji}>➕</Text>
-              <Text style={[styles.actionLabel, { color: colors.income }]}>Thu nhập</Text>
+              <Text style={styles.actionLabel}>Thu nhập</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: "#EFF6FF" }]}
+              style={[styles.actionBtn, { backgroundColor: "rgba(255,255,255,0.18)" }]}
               onPress={() => navigation.navigate("TransferMoney")}
             >
               <Text style={styles.actionEmoji}>↔️</Text>
-              <Text style={[styles.actionLabel, { color: "#3B82F6" }]}>Chuyển tiền</Text>
+              <Text style={styles.actionLabel}>Chuyển tiền</Text>
             </TouchableOpacity>
           </View>
-        </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* ── Chi tiêu theo hạng mục ── */}
         <View style={styles.section}>
@@ -172,35 +178,36 @@ export default function Dashboard({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe:         { flex: 1, backgroundColor: "#F4F6F9" },
-  container:    { flex: 1, backgroundColor: "#F4F6F9" },
+  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
   // Header
-  header:       { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  greeting:     { fontSize: typography.fontSize.sm, color: colors.textSecondary },
-  username:     { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  settingsBtn:  { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EFEFEF", justifyContent: "center", alignItems: "center" },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  greeting: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
+  username: { fontSize: typography.fontSize.xl, fontFamily: typography.family.bold, color: colors.textPrimary, marginTop: spacing.xxs },
+  settingsBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
   settingsIcon: { fontSize: 16 },
   // Card
-  card:         { marginHorizontal: spacing.base, backgroundColor: "#FFFFFF", borderRadius: 20, padding: spacing.base, marginBottom: spacing.base, borderWidth: 1, borderColor: "#F0F0F0", elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
-  monthRow:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
-  monthLabel:   { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semiBold, color: colors.textPrimary },
-  moreBtn:      { fontSize: 20, color: colors.textSecondary, letterSpacing: 2 },
+  card: { marginHorizontal: spacing.md, borderRadius: borderRadius.xxl, marginBottom: spacing.lg, overflow: "hidden", ...shadows.lifted },
+  cardGlow: { padding: spacing.lg },
+  monthRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
+  monthLabel: { fontSize: typography.fontSize.md, fontFamily: typography.family.semiBold, color: colors.textInverse },
+  moreBtn: { fontSize: 20, color: "rgba(255,255,255,0.78)", letterSpacing: 2 },
   // Circle row
-  circleRow:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.lg },
-  statsCol:     { flex: 1, paddingLeft: spacing.lg },
+  circleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.lg },
+  statsCol: { flex: 1, paddingLeft: spacing.lg },
   statItem:     {},
-  statLabel:    { fontSize: typography.fontSize.xs, color: colors.textSecondary },
-  statValue:    { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, marginTop: 2 },
+  statLabel: { fontSize: typography.fontSize.xs, color: "rgba(255,255,255,0.72)", fontFamily: typography.family.medium },
+  statValue: { fontSize: typography.fontSize.base, fontFamily: typography.family.bold, color: colors.textInverse, marginTop: 4 },
   // Actions
-  actions:      { flexDirection: "row", gap: spacing.sm },
-  actionBtn:    { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: 12 },
+  actions: { flexDirection: "row", gap: spacing.sm },
+  actionBtn: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
   actionEmoji:  { fontSize: 18, marginBottom: 4 },
-  actionLabel:  { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium },
+  actionLabel: { fontSize: typography.fontSize.xs, fontFamily: typography.family.semiBold, color: colors.textInverse },
   // Section
-  section:      { paddingHorizontal: spacing.base, marginBottom: spacing.base },
+  section: { paddingHorizontal: spacing.md, marginBottom: spacing.lg },
   sectionHeader:{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
-  sectionTitle: { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semiBold, color: colors.textPrimary },
-  seeAll:       { fontSize: typography.fontSize.sm, color: colors.primary },
-  catCard:      { backgroundColor: "#FFFFFF", borderRadius: 16, padding: spacing.md },
-  emptyText:    { textAlign: "center", color: colors.textSecondary, paddingVertical: spacing.md },
+  sectionTitle: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  seeAll: { fontSize: typography.fontSize.sm, color: colors.primary, fontFamily: typography.family.semiBold },
+  catCard: { backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, paddingVertical: spacing.xs, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  emptyText:    { textAlign: "center", color: colors.textSecondary, paddingVertical: spacing.base },
 });

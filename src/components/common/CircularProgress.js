@@ -22,6 +22,8 @@ export default function CircularProgress({
   centerSub = "",
   color = colors.primary,
   trackColor = "#E8F5F0",
+  textColor = colors.textPrimary,
+  labelColor = colors.textSecondary,
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -53,9 +55,9 @@ export default function CircularProgress({
         />
       </Svg>
       <View style={styles.center}>
-        <Text style={styles.label}>{centerLabel}</Text>
-        <Text style={styles.value}>{centerValue}</Text>
-        {!!centerSub && <Text style={styles.sub}>{centerSub}</Text>}
+        <Text style={[styles.label, { color: labelColor }]}>{centerLabel}</Text>
+        <Text style={[styles.value, { color: textColor }]}>{centerValue}</Text>
+        {!!centerSub && <Text style={[styles.sub, { color: labelColor }]}>{centerSub}</Text>}
       </View>
     </View>
   );
@@ -64,6 +66,6 @@ export default function CircularProgress({
 const styles = StyleSheet.create({
   center: { alignItems: "center" },
   label:  { fontSize: typography.fontSize.xs, color: colors.textSecondary, marginBottom: 2 },
-  value:  { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, textAlign: "center" },
+  value:  { fontSize: typography.fontSize.base, fontFamily: typography.family.bold, color: colors.textPrimary, textAlign: "center" },
   sub:    { fontSize: typography.fontSize.xs, color: colors.textSecondary },
 });
