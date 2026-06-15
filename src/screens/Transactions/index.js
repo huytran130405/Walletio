@@ -3,12 +3,13 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, TextInput, Alert,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import { deleteTransaction } from "../../store/slices/transactionSlice";
 import TransactionItem from "../../components/common/TransactionItem";
-import { colors }     from "../../theme/colors";
+import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 const FILTERS = ["Tháng này", "Hàng tuần", "Tất cả"];
 
@@ -117,23 +118,23 @@ export default function Transactions({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Lịch sử giao dịch</Text>
         <View style={{ width: 36 }} />
-      </View>
+      </Animated.View>
 
       {/* Summary */}
       <View style={styles.summaryRow}>
-        <View style={[styles.summaryCard, { borderLeftColor: colors.income, borderLeftWidth: 3 }]}>
+        <View style={[styles.summaryCard, { backgroundColor: "#F0FAF3" }]}>
           <Text style={styles.sumLabel}>Thu</Text>
           <Text style={[styles.sumValue, { color: colors.income }]}>
             +{(totalIncome / 1000).toLocaleString("vi-VN")}₫
           </Text>
         </View>
-        <View style={[styles.summaryCard, { borderLeftColor: colors.expense, borderLeftWidth: 3 }]}>
+        <View style={[styles.summaryCard, { backgroundColor: "#FBEDE8" }]}>
           <Text style={styles.sumLabel}>Chi</Text>
           <Text style={[styles.sumValue, { color: colors.expense }]}>
             -{(totalExpense / 1000).toLocaleString("vi-VN")}₫
@@ -191,28 +192,28 @@ export default function Transactions({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe:             { flex: 1, backgroundColor: "#F4F6F9" },
-  header:           { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  backBtn:          { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" },
-  backIcon:         { fontSize: 18 },
-  title:            { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  summaryRow:       { flexDirection: "row", paddingHorizontal: spacing.base, gap: spacing.sm, marginBottom: spacing.sm },
-  summaryCard:      { flex: 1, backgroundColor: "#fff", borderRadius: 12, padding: spacing.md },
-  sumLabel:         { fontSize: typography.fontSize.xs, color: colors.textSecondary },
-  sumValue:         { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.bold, marginTop: 2 },
-  searchRow:        { flexDirection: "row", alignItems: "center", marginHorizontal: spacing.base, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  backBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  backIcon: { fontSize: 18, color: colors.textPrimary },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  summaryRow: { flexDirection: "row", paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.md },
+  summaryCard: { flex: 1, borderRadius: borderRadius.xl, padding: spacing.base, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  sumLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
+  sumValue: { fontSize: typography.fontSize.base, fontFamily: typography.family.bold, marginTop: 4 },
+  searchRow: { flexDirection: "row", alignItems: "center", marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.full, paddingHorizontal: spacing.base, paddingVertical: spacing.sm, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
   searchIcon:       { fontSize: 16, marginRight: spacing.sm },
   searchInput:      { flex: 1, fontSize: typography.fontSize.md, color: colors.textPrimary, paddingVertical: 0 },
-  filterRow:        { flexDirection: "row", paddingHorizontal: spacing.base, gap: spacing.sm, marginBottom: spacing.md },
-  filterBtn:        { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border },
+  filterRow: { flexDirection: "row", paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.base },
+  filterBtn: { paddingHorizontal: spacing.base, paddingVertical: spacing.xs, borderRadius: borderRadius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   filterActive:     { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText:       { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontWeight: typography.fontWeight.medium },
+  filterText: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
   filterTextActive: { color: "#fff" },
-  section:          { paddingHorizontal: spacing.base, marginBottom: spacing.sm },
-  dateHeader:       { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semiBold, color: colors.textSecondary, marginBottom: spacing.xs ?? 4 },
-  sectionCard:      { backgroundColor: "#fff", borderRadius: 14, paddingHorizontal: spacing.md, paddingVertical: spacing.xs ?? 4 },
-  sep:              { height: 1, backgroundColor: "#F3F4F6" },
+  section: { paddingHorizontal: spacing.md, marginBottom: spacing.base },
+  dateHeader: { fontSize: typography.fontSize.sm, fontFamily: typography.family.semiBold, color: colors.textSecondary, marginBottom: spacing.xs },
+  sectionCard: { backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, paddingVertical: spacing.xs, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  sep: { height: 1, backgroundColor: colors.divider },
   empty:            { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 60 },
-  emptyEmoji:       { fontSize: 48, marginBottom: spacing.md },
+  emptyEmoji:       { fontSize: 48, marginBottom: spacing.base },
   emptyText:        { fontSize: typography.fontSize.md, color: colors.textSecondary },
 });

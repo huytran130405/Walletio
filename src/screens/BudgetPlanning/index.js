@@ -3,12 +3,14 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, Alert,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchBudgets, deleteBudget, selectBudgetSummary } from "../../store/slices/budgetSlice";
 import CategoryRow from "../../components/common/CategoryRow";
-import { colors }     from "../../theme/colors";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 export default function BudgetPlanning({ navigation }) {
   const dispatch = useDispatch();
@@ -53,7 +55,7 @@ export default function BudgetPlanning({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
@@ -61,10 +63,11 @@ export default function BudgetPlanning({ navigation }) {
           <TouchableOpacity onPress={() => navigation.navigate("AddBudget")}>
             <Text style={styles.addBtn}>+ Thêm</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* Overview card */}
-        <View style={styles.overviewCard}>
+        <Animated.View entering={FadeInUp.duration(520).springify()} style={styles.overviewCard}>
+          <LinearGradient colors={gradients.sky} style={styles.overviewGradient}>
           <View style={styles.overviewRow}>
             <View>
               <Text style={styles.overviewLabel}>Tổng hạn mức</Text>
@@ -90,7 +93,8 @@ export default function BudgetPlanning({ navigation }) {
             />
           </View>
           <Text style={styles.overallPct}>{Math.round(overallPct * 100)}% đã sử dụng</Text>
-        </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* Title */}
         <View style={styles.titleBlock}>
@@ -138,27 +142,28 @@ export default function BudgetPlanning({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe:          { flex: 1, backgroundColor: "#F4F6F9" },
+  safe: { flex: 1, backgroundColor: colors.background },
   container:     { flex: 1 },
-  header:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  backBtn:       { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" },
-  backIcon:      { fontSize: 18 },
-  headerTitle:   { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  addBtn:        { fontSize: typography.fontSize.md, color: colors.primary, fontWeight: typography.fontWeight.semiBold },
-  overviewCard:  { marginHorizontal: spacing.base, backgroundColor: "#fff", borderRadius: 16, padding: spacing.base, marginBottom: spacing.md },
-  overviewRow:   { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md },
-  overviewLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary },
-  overviewAmount:{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, marginTop: 2 },
-  overallBarTrack:{ height: 8, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden", marginBottom: 6 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  backBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  backIcon: { fontSize: 18, color: colors.textPrimary },
+  headerTitle: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  addBtn: { fontSize: typography.fontSize.md, color: colors.primary, fontFamily: typography.family.semiBold },
+  overviewCard: { marginHorizontal: spacing.md, borderRadius: borderRadius.xxl, marginBottom: spacing.lg, overflow: "hidden", borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  overviewGradient: { padding: spacing.lg },
+  overviewRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md },
+  overviewLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
+  overviewAmount: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary, marginTop: 4 },
+  overallBarTrack:{ height: 10, backgroundColor: "rgba(47,125,90,0.12)", borderRadius: 99, overflow: "hidden", marginBottom: spacing.xs },
   overallBar:    { height: "100%", borderRadius: 99 },
-  overallPct:    { fontSize: typography.fontSize.xs, color: colors.textSecondary },
-  titleBlock:    { paddingHorizontal: spacing.base, marginBottom: spacing.sm },
-  subtitle:      { fontSize: typography.fontSize.sm, color: colors.textSecondary },
-  section:       { paddingHorizontal: spacing.base, marginBottom: spacing.md },
-  sectionLabel:  { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semiBold, color: colors.textPrimary, marginBottom: spacing.sm },
-  sectionCard:   { backgroundColor: "#FFFFFF", borderRadius: 14, paddingHorizontal: spacing.md },
-  divider:       { height: 1, backgroundColor: "#F3F4F6" },
-  addBudgetBtn:  { marginHorizontal: spacing.base, padding: spacing.md, borderRadius: 14, borderWidth: 1.5, borderColor: colors.primary, borderStyle: "dashed", alignItems: "center", marginTop: spacing.sm },
-  addBudgetText: { color: colors.primary, fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semiBold },
-  hint:          { textAlign: "center", fontSize: typography.fontSize.xs, color: colors.textSecondary, marginTop: spacing.md },
+  overallPct: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
+  titleBlock: { paddingHorizontal: spacing.md, marginBottom: spacing.sm },
+  subtitle: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
+  section: { paddingHorizontal: spacing.md, marginBottom: spacing.lg },
+  sectionLabel: { fontSize: typography.fontSize.md, fontFamily: typography.family.bold, color: colors.textPrimary, marginBottom: spacing.sm },
+  sectionCard: { backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  divider: { height: 1, backgroundColor: colors.divider },
+  addBudgetBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderWidth: 1.5, borderColor: colors.primaryLight, borderStyle: "dashed", borderRadius: borderRadius.full, paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center", marginTop: spacing.sm, backgroundColor: "rgba(255,253,247,0.7)" },
+  addBudgetText: { color: colors.primary, fontSize: typography.fontSize.md, fontFamily: typography.family.semiBold },
+  hint:          { textAlign: "center", fontSize: typography.fontSize.xs, color: colors.textSecondary, marginTop: spacing.base },
 });

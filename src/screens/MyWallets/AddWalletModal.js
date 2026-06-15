@@ -6,16 +6,17 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { addWallet } from "../../store/slices/walletSlice";
 import Toast          from "../../components/common/Toast";
-import { colors }     from "../../theme/colors";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 const WALLET_TYPES = [
-  { key: "cash",    label: "Tiền mặt",            emoji: "💵", color: "#22C55E" },
-  { key: "bank",    label: "Tài khoản ngân hàng", emoji: "🏦", color: "#3B82F6" },
-  { key: "ewallet", label: "Ví điện tử",           emoji: "📱", color: "#A855F7" },
+  { key: "cash", label: "Tiền mặt", emoji: "💵", color: colors.primary },
+  { key: "bank", label: "Tài khoản ngân hàng", emoji: "🏦", color: colors.info },
+  { key: "ewallet", label: "Ví điện tử", emoji: "📱", color: colors.accent },
 ];
-const COLORS = ["#22C55E", "#3B82F6", "#A855F7", "#F59E0B", "#EF4444", "#EC4899", "#14B8A6"];
+const COLORS = [colors.primary, colors.info, colors.accent, colors.clay, colors.expense, colors.secondaryDark, colors.earth];
 
 export default function AddWalletModal({ navigation }) {
   const dispatch = useDispatch();
@@ -106,7 +107,7 @@ export default function AddWalletModal({ navigation }) {
                 onPress={() => { setType(t.key); setColor(t.color); }}
               >
                 <Text style={styles.typeEmoji}>{t.emoji}</Text>
-                <Text style={[styles.typeLabel, type === t.key && { color: t.color, fontWeight: typography.fontWeight.semiBold }]}>
+          <Text style={[styles.typeLabel, type === t.key && { color: t.color, fontFamily: typography.family.semiBold }]}>
                   {t.label}
                 </Text>
               </TouchableOpacity>
@@ -133,34 +134,37 @@ export default function AddWalletModal({ navigation }) {
         onPress={handleSave}
         disabled={status === "pending"}
       >
-        <Text style={styles.saveBtnText}>
-          {status === "pending" ? "Đang lưu..." : "Tạo ví"}
-        </Text>
+        <LinearGradient colors={gradients.forest} style={styles.saveGradient}>
+          <Text style={styles.saveBtnText}>
+            {status === "pending" ? "Đang lưu..." : "Tạo ví"}
+          </Text>
+        </LinearGradient>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe:              { flex: 1, backgroundColor: "#fff" },
-  header:            { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  closeBtn:          { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" },
-  closeIcon:         { fontSize: 14, color: colors.textPrimary, fontWeight: "600" },
-  title:             { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  previewWrap:       { alignItems: "center", paddingVertical: spacing.xl },
-  previewIcon:       { width: 80, height: 80, borderRadius: 24, justifyContent: "center", alignItems: "center", marginBottom: spacing.sm },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  closeBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  closeIcon: { fontSize: 14, color: colors.textPrimary, fontFamily: typography.family.semiBold },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  previewWrap: { alignItems: "center", paddingVertical: spacing.lg },
+  previewIcon: { width: 88, height: 88, borderRadius: borderRadius.xxl, justifyContent: "center", alignItems: "center", marginBottom: spacing.sm },
   previewEmoji:      { fontSize: 36 },
-  previewName:       { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  form:              { paddingHorizontal: spacing.base, paddingBottom: spacing.base },
-  label:             { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semiBold, color: colors.textSecondary, marginBottom: spacing.xs ?? 4, marginTop: spacing.md },
-  input:             { backgroundColor: "#F9FAFB", borderRadius: 12, padding: spacing.md, fontSize: typography.fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
+  previewName: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  form: { paddingHorizontal: spacing.md, paddingBottom: spacing.base },
+  label: { fontSize: typography.fontSize.sm, fontFamily: typography.family.semiBold, color: colors.textSecondary, marginBottom: spacing.xs, marginTop: spacing.base },
+  input: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.base, fontSize: typography.fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
   typeRow:           { gap: spacing.sm },
-  typeBtn:           { flexDirection: "row", alignItems: "center", padding: spacing.md, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, marginBottom: spacing.xs ?? 4 },
-  typeEmoji:         { fontSize: 22, marginRight: spacing.md },
-  typeLabel:         { fontSize: typography.fontSize.md, color: colors.textPrimary },
+  typeBtn: { flexDirection: "row", alignItems: "center", padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: 1.5, borderColor: colors.border, marginBottom: spacing.xs, backgroundColor: colors.surface },
+  typeEmoji:         { fontSize: 22, marginRight: spacing.base },
+  typeLabel: { fontSize: typography.fontSize.md, color: colors.textPrimary, fontFamily: typography.family.medium },
   colorRow:          { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   colorDot:          { width: 34, height: 34, borderRadius: 17 },
-  colorDotSelected:  { borderWidth: 3, borderColor: "#fff", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
-  saveBtn:           { marginHorizontal: spacing.base, marginBottom: spacing.lg, backgroundColor: colors.primary, borderRadius: 14, padding: spacing.lg, alignItems: "center" },
-  saveBtnText:       { color: "#fff", fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semiBold },
+  colorDotSelected: { borderWidth: 3, borderColor: colors.surface, ...shadows.soft },
+  saveBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, overflow: "hidden", ...shadows.lifted },
+  saveGradient: { paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center" },
+  saveBtnText: { color: "#fff", fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold },
 });

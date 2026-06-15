@@ -3,12 +3,14 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   SafeAreaView, Alert,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchWallets, deleteWallet, selectTotalBalance } from "../../store/slices/walletSlice";
 import WalletCard  from "../../components/common/WalletCard";
-import { colors }  from "../../theme/colors";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 export default function MyWallets({ navigation }) {
   const dispatch   = useDispatch();
@@ -34,16 +36,17 @@ export default function MyWallets({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View entering={FadeInDown.duration(450)} style={styles.header}>
           <View style={styles.avatar}><Text style={styles.avatarText}>👛</Text></View>
           <Text style={styles.name}>Ví của tôi</Text>
           <TouchableOpacity style={styles.settingsBtn}>
             <Text>⚙️</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* Total balance hero */}
-        <View style={styles.heroCard}>
+        <Animated.View entering={FadeInUp.duration(500).springify()} style={styles.heroCard}>
+          <LinearGradient colors={gradients.forest} style={styles.heroGradient}>
           <Text style={styles.heroLabel}>Tổng số dư</Text>
           <Text style={styles.heroAmount}>{totalBalance.toLocaleString("vi-VN")} ₫</Text>
           <TouchableOpacity
@@ -52,7 +55,8 @@ export default function MyWallets({ navigation }) {
           >
             <Text style={styles.heroBtnText}>📊 Kiểm soát số dư</Text>
           </TouchableOpacity>
-        </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* Wallet list */}
         <View style={styles.section}>
@@ -95,23 +99,24 @@ export default function MyWallets({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe:            { flex: 1, backgroundColor: "#F4F6F9" },
-  header:          { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  avatar:          { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center", marginRight: spacing.sm },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceAlt, justifyContent: "center", alignItems: "center", marginRight: spacing.sm, borderWidth: 1, borderColor: colors.border },
   avatarText:      { fontSize: 20 },
-  name:            { flex: 1, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semiBold, color: colors.textPrimary },
-  settingsBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" },
-  heroCard:        { marginHorizontal: spacing.base, backgroundColor: colors.primary, borderRadius: 20, padding: spacing.xl, marginBottom: spacing.lg, alignItems: "center" },
-  heroLabel:       { fontSize: typography.fontSize.sm, color: "rgba(255,255,255,0.7)" },
-  heroAmount:      { fontSize: typography.fontSize.huge, fontWeight: typography.fontWeight.bold, color: "#fff", marginVertical: spacing.sm },
-  heroBtn:         { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 10, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  heroBtnText:     { color: "#fff", fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium },
-  section:         { paddingHorizontal: spacing.base, marginBottom: spacing.md },
+  name: { flex: 1, fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  settingsBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  heroCard: { marginHorizontal: spacing.md, borderRadius: borderRadius.xxl, marginBottom: spacing.lg, overflow: "hidden", ...shadows.lifted },
+  heroGradient: { padding: spacing.xl, alignItems: "center" },
+  heroLabel: { fontSize: typography.fontSize.sm, color: "rgba(255,255,255,0.72)", fontFamily: typography.family.medium },
+  heroAmount: { fontSize: typography.fontSize.huge, fontFamily: typography.family.bold, color: "#fff", marginVertical: spacing.sm, textAlign: "center" },
+  heroBtn: { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: borderRadius.full, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
+  heroBtnText: { color: "#fff", fontSize: typography.fontSize.sm, fontFamily: typography.family.semiBold },
+  section: { paddingHorizontal: spacing.md, marginBottom: spacing.base },
   sectionRow:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
-  sectionTitle:    { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semiBold, color: colors.textPrimary },
-  addLink:         { fontSize: typography.fontSize.md, color: colors.primary, fontWeight: typography.fontWeight.medium },
-  empty:           { backgroundColor: "#fff", borderRadius: 12, padding: spacing.xl, alignItems: "center" },
+  sectionTitle: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  addLink: { fontSize: typography.fontSize.md, color: colors.primary, fontFamily: typography.family.semiBold },
+  empty: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.lg, alignItems: "center", borderWidth: 1, borderColor: colors.border },
   emptyText:       { color: colors.textSecondary, textAlign: "center" },
-  transferBtn:     { marginHorizontal: spacing.base, padding: spacing.lg, borderRadius: 14, borderWidth: 1.5, borderColor: colors.primary, alignItems: "center" },
-  transferBtnText: { color: colors.primary, fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semiBold },
+  transferBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, paddingVertical: spacing.base, paddingHorizontal: spacing.md, backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border, alignItems: "center" },
+  transferBtnText: { color: colors.primaryDark, fontSize: typography.fontSize.md, fontFamily: typography.family.semiBold },
 });

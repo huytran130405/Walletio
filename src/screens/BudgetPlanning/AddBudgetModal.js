@@ -8,11 +8,12 @@ import { createBudget } from "../../store/slices/budgetSlice";
 import CategoryPicker from "../../components/common/CategoryPicker";
 import BottomSheet    from "../../components/common/BottomSheet";
 import Toast          from "../../components/common/Toast";
-import { colors }     from "../../theme/colors";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing }    from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
-const COLORS = ["#22C55E", "#3B82F6", "#A855F7", "#F59E0B", "#EF4444", "#EC4899", "#14B8A6"];
+const COLORS = [colors.primary, colors.info, colors.accent, colors.clay, colors.expense, colors.secondaryDark, colors.earth];
 const GROUPS = ["🔴 Thiết yếu", "🟠 Di chuyển", "🟡 Mong muốn", "🔵 Khác"];
 
 export default function AddBudgetModal({ navigation }) {
@@ -90,10 +91,10 @@ export default function AddBudgetModal({ navigation }) {
           {GROUPS.map((g) => (
             <TouchableOpacity
               key={g}
-              style={[styles.groupBtn, groupTitle === g && { borderColor: colors.primary, backgroundColor: "#EEF9F3" }]}
+              style={[styles.groupBtn, groupTitle === g && { borderColor: colors.primary, backgroundColor: colors.surfaceAlt }]}
               onPress={() => setGroupTitle(g)}
             >
-              <Text style={[styles.groupText, groupTitle === g && { color: colors.primary, fontWeight: typography.fontWeight.semiBold }]}>
+              <Text style={[styles.groupText, groupTitle === g && { color: colors.primary, fontFamily: typography.family.semiBold }]}>
                 {g}
               </Text>
               {groupTitle === g && <Text style={{ color: colors.primary }}>✓</Text>}
@@ -119,9 +120,11 @@ export default function AddBudgetModal({ navigation }) {
         onPress={handleSave}
         disabled={status === "pending"}
       >
-        <Text style={styles.saveBtnText}>
-          {status === "pending" ? "Đang lưu..." : "Thêm ngân sách"}
-        </Text>
+        <LinearGradient colors={gradients.forest} style={styles.saveGradient}>
+          <Text style={styles.saveBtnText}>
+            {status === "pending" ? "Đang lưu..." : "Thêm ngân sách"}
+          </Text>
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Category picker */}
@@ -133,24 +136,25 @@ export default function AddBudgetModal({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe:           { flex: 1, backgroundColor: "#fff" },
-  header:         { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  closeBtn:       { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" },
-  closeIcon:      { fontSize: 14, color: colors.textPrimary, fontWeight: "600" },
-  title:          { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  form:           { paddingHorizontal: spacing.base, paddingBottom: spacing.base },
-  label:          { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semiBold, color: colors.textSecondary, marginBottom: 6, marginTop: spacing.md },
-  selectBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#F9FAFB", borderRadius: 12, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
-  selectText:     { fontSize: typography.fontSize.md, color: colors.textPrimary, fontWeight: typography.fontWeight.medium },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  closeBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  closeIcon: { fontSize: 14, color: colors.textPrimary, fontFamily: typography.family.semiBold },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  form: { paddingHorizontal: spacing.md, paddingBottom: spacing.base },
+  label: { fontSize: typography.fontSize.sm, fontFamily: typography.family.semiBold, color: colors.textSecondary, marginBottom: 6, marginTop: spacing.base },
+  selectBtn: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.base, borderWidth: 1, borderColor: colors.border },
+  selectText: { fontSize: typography.fontSize.md, color: colors.textPrimary, fontFamily: typography.family.medium },
   selectArrow:    { fontSize: 20, color: colors.textSecondary },
-  amountRow:      { flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingRight: spacing.md },
-  amountInput:    { flex: 1, padding: spacing.md, fontSize: typography.fontSize.md, color: colors.textPrimary },
+  amountRow: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.border, paddingRight: spacing.base },
+  amountInput:    { flex: 1, padding: spacing.base, fontSize: typography.fontSize.md, color: colors.textPrimary },
   amountCurrency: { fontSize: typography.fontSize.sm, color: colors.textSecondary },
-  groupBtn:       { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: spacing.md, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.xs ?? 4 },
-  groupText:      { fontSize: typography.fontSize.md, color: colors.textPrimary },
+  groupBtn: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.xs, backgroundColor: colors.surface },
+  groupText: { fontSize: typography.fontSize.md, color: colors.textPrimary, fontFamily: typography.family.medium },
   colorRow:       { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   colorDot:       { width: 36, height: 36, borderRadius: 18 },
-  colorSelected:  { borderWidth: 3, borderColor: "#fff", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
-  saveBtn:        { marginHorizontal: spacing.base, marginBottom: spacing.lg, backgroundColor: colors.primary, borderRadius: 14, padding: spacing.lg, alignItems: "center" },
-  saveBtnText:    { color: "#fff", fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semiBold },
+  colorSelected: { borderWidth: 3, borderColor: colors.surface, ...shadows.soft },
+  saveBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, overflow: "hidden", ...shadows.lifted },
+  saveGradient: { paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center" },
+  saveBtnText: { color: "#fff", fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold },
 });

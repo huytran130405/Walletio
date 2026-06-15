@@ -3,20 +3,22 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   SafeAreaView, TextInput, Alert,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useDispatch, useSelector } from "react-redux";
 import { createTransaction } from "../../store/slices/transactionSlice";
 import BottomSheet from "../../components/common/BottomSheet";
 import CategoryPicker from "../../components/common/CategoryPicker";
 import WalletCard from "../../components/common/WalletCard";
 import Toast from "../../components/common/Toast";
-import { colors } from "../../theme/colors";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing } from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 const PAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "⌫"];
 const TYPES = [
-  { key: "expense", label: "Chi phí", color: colors.expense, bg: "#FEF2F2" },
-  { key: "income", label: "Thu nhập", color: colors.income, bg: "#ECFDF5" },
+  { key: "expense", label: "Chi phí", color: colors.expense, bg: "#FBEDE8" },
+  { key: "income", label: "Thu nhập", color: colors.income, bg: "#F0FAF3" },
 ];
 
 export default function CreateTransaction({ navigation, route }) {
@@ -99,13 +101,13 @@ export default function CreateTransaction({ navigation, route }) {
       />
 
       {/* Header */}
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.closeIcon}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Thêm giao dịch</Text>
         <View style={{ width: 36 }} />
-      </View>
+      </Animated.View>
 
       {/* Type toggle */}
       <View style={styles.toggleRow}>
@@ -123,12 +125,12 @@ export default function CreateTransaction({ navigation, route }) {
       </View>
 
       {/* Amount */}
-      <View style={styles.amountBlock}>
+      <Animated.View entering={FadeInUp.duration(460).springify()} style={styles.amountBlock}>
         <Text style={styles.amountLabel}>Số tiền</Text>
         <Text style={[styles.amountValue, { color: activeType?.color ?? colors.textPrimary }]}>
           {Number(amount).toLocaleString("vi-VN")} ₫
         </Text>
-      </View>
+      </Animated.View>
 
       {/* Fields */}
       <View style={styles.fields}>
@@ -190,13 +192,15 @@ export default function CreateTransaction({ navigation, route }) {
 
       {/* Save button */}
       <TouchableOpacity
-        style={[styles.saveBtn, { backgroundColor: activeType?.color ?? colors.primary }, status === "pending" && { opacity: 0.6 }]}
+        style={[styles.saveBtn, status === "pending" && { opacity: 0.6 }]}
         onPress={handleSave}
         disabled={status === "pending"}
       >
-        <Text style={styles.saveBtnText}>
-          {status === "pending" ? "Đang lưu..." : "Lưu giao dịch"}
-        </Text>
+        <LinearGradient colors={type === "income" ? gradients.forest : [colors.clay, colors.expense]} style={styles.saveGradient}>
+          <Text style={styles.saveBtnText}>
+            {status === "pending" ? "Đang lưu..." : "Lưu giao dịch"}
+          </Text>
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Category Picker BottomSheet */}
@@ -232,29 +236,30 @@ export default function CreateTransaction({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" },
-  closeIcon: { fontSize: 14, color: colors.textPrimary, fontWeight: "600" },
-  title: { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  toggleRow: { flexDirection: "row", marginHorizontal: spacing.base, backgroundColor: "#F3F4F6", borderRadius: 12, padding: 4, marginBottom: spacing.md },
-  toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center" },
-  toggleText: { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.medium, color: colors.textSecondary },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  closeBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  closeIcon: { fontSize: 14, color: colors.textPrimary, fontFamily: typography.family.semiBold },
+  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  toggleRow: { flexDirection: "row", marginHorizontal: spacing.md, backgroundColor: colors.surfaceAlt, borderRadius: borderRadius.full, padding: spacing.xxs, marginBottom: spacing.lg },
+  toggleBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.full, alignItems: "center" },
+  toggleText: { fontSize: typography.fontSize.md, fontFamily: typography.family.medium, color: colors.textSecondary },
   toggleTextActive: { color: "#fff" },
-  amountBlock: { alignItems: "center", paddingVertical: spacing.md },
-  amountLabel: { fontSize: typography.fontSize.sm, color: colors.textSecondary },
-  amountValue: { fontSize: typography.fontSize.xxxl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, marginTop: 4 },
-  fields: { marginHorizontal: spacing.base, backgroundColor: "#F9FAFB", borderRadius: 14, paddingHorizontal: spacing.md, marginBottom: spacing.md },
-  fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md },
-  fieldEmoji: { fontSize: 18, marginRight: spacing.md },
-  fieldLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary },
-  fieldValue: { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.medium, color: colors.textPrimary, marginTop: 2 },
+  amountBlock: { alignItems: "center", paddingVertical: spacing.lg, marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xxl, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg, ...shadows.soft },
+  amountLabel: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
+  amountValue: { fontSize: typography.fontSize.xxxl, fontFamily: typography.family.bold, color: colors.textPrimary, marginTop: spacing.xs },
+  fields: { marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.base },
+  fieldEmoji: { fontSize: 18, marginRight: spacing.base },
+  fieldLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
+  fieldValue: { fontSize: typography.fontSize.md, fontFamily: typography.family.semiBold, color: colors.textPrimary, marginTop: 2 },
   fieldArrow: { fontSize: 20, color: colors.textSecondary },
   noteInput: { flex: 1, fontSize: typography.fontSize.md, color: colors.textPrimary, paddingVertical: 0 },
-  divider: { height: 1, backgroundColor: "#F0F0F0", marginLeft: 38 },
-  numpad: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: spacing.base, marginBottom: spacing.md },
-  padKey: { width: "33.33%", paddingVertical: 14, alignItems: "center" },
-  padKeyText: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.medium, color: colors.textPrimary },
-  saveBtn: { marginHorizontal: spacing.base, borderRadius: 14, padding: spacing.lg, alignItems: "center" },
-  saveBtnText: { color: "#fff", fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semiBold },
+  divider: { height: 1, backgroundColor: colors.divider, marginLeft: 38 },
+  numpad: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: spacing.md, marginBottom: spacing.base },
+  padKey: { width: "33.33%", paddingVertical: spacing.sm, alignItems: "center" },
+  padKeyText: { fontSize: typography.fontSize.xl, fontFamily: typography.family.medium, color: colors.textPrimary },
+  saveBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, overflow: "hidden", ...shadows.lifted },
+  saveGradient: { paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center" },
+  saveBtnText: { color: "#fff", fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold },
 });

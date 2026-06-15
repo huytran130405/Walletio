@@ -1,10 +1,12 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../store/slices/authSlice";
-import { colors } from "../../theme/colors";
+import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
-import { spacing } from "../../theme/spacing";
+import { borderRadius, spacing } from "../../theme/spacing";
 
 const MENU_ITEMS = [
   { emoji:"👤", label:"Thông tin tài khoản" },
@@ -30,13 +32,14 @@ export default function AccountSettings() {
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
           <Text style={styles.title}>Cá nhân</Text>
           <TouchableOpacity style={styles.settingsBtn}><Text>⚙️</Text></TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* Profile card */}
-        <View style={styles.profileCard}>
+        <Animated.View entering={FadeInUp.duration(520).springify()} style={styles.profileCard}>
+          <LinearGradient colors={gradients.sky} style={styles.profileGradient}>
           <View style={styles.avatarWrap}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>👤</Text>
@@ -57,7 +60,8 @@ export default function AccountSettings() {
               <Text style={styles.statLabel}>Tài ví</Text>
             </View>
           </View>
-        </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* Menu */}
         <View style={styles.menuCard}>
@@ -97,31 +101,32 @@ export default function AccountSettings() {
 }
 
 const styles = StyleSheet.create({
-  safe:         { flex:1, backgroundColor:"#F4F6F9" },
-  header:       { flexDirection:"row", justifyContent:"space-between", alignItems:"center", paddingHorizontal:spacing.base, paddingTop:spacing.lg, paddingBottom:spacing.sm },
-  title:        { fontSize:typography.fontSize.xl, fontWeight:typography.fontWeight.bold, color:colors.textPrimary },
-  settingsBtn:  { width:36, height:36, borderRadius:18, backgroundColor:"#F0F0F0", justifyContent:"center", alignItems:"center" },
-  profileCard:  { marginHorizontal:spacing.base, backgroundColor:"#fff", borderRadius:20, padding:spacing.xl, alignItems:"center", marginBottom:spacing.md },
-  avatarWrap:   { marginBottom:spacing.md },
-  avatar:       { width:72, height:72, borderRadius:36, backgroundColor:"#E8F5F0", justifyContent:"center", alignItems:"center", borderWidth:3, borderColor:colors.primary },
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
+  title: { fontSize: typography.fontSize.xl, fontFamily: typography.family.bold, color: colors.textPrimary },
+  settingsBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
+  profileCard: { marginHorizontal: spacing.md, borderRadius: borderRadius.xxl, overflow: "hidden", marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  profileGradient: { padding: spacing.lg, alignItems: "center" },
+  avatarWrap:   { marginBottom:spacing.base },
+  avatar: { width: 78, height: 78, borderRadius: 39, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", borderWidth: 3, borderColor: colors.primaryLight },
   avatarText:   { fontSize:32 },
-  profileName:  { fontSize:typography.fontSize.lg, fontWeight:typography.fontWeight.bold, color:colors.textPrimary },
-  profileEmail: { fontSize:typography.fontSize.sm, color:colors.textSecondary, marginTop:4, marginBottom:spacing.md },
+  profileName: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
+  profileEmail: { fontSize: typography.fontSize.sm, color: colors.textSecondary, marginTop: 4, marginBottom: spacing.base, fontFamily: typography.family.medium },
   statsRow:     { flexDirection:"row", width:"100%", justifyContent:"center" },
-  statItem:     { alignItems:"center", paddingHorizontal:spacing.xl },
-  statValue:    { fontSize:typography.fontSize.xl, fontWeight:typography.fontWeight.bold, color:colors.textPrimary },
+  statItem:     { alignItems:"center", paddingHorizontal:24 },
+  statValue: { fontSize: typography.fontSize.xl, fontFamily: typography.family.bold, color: colors.textPrimary },
   statLabel:    { fontSize:typography.fontSize.xs, color:colors.textSecondary, marginTop:2 },
   statDivider:  { width:1, backgroundColor:colors.border },
-  menuCard:     { marginHorizontal:spacing.base, backgroundColor:"#fff", borderRadius:16, paddingHorizontal:spacing.md, marginBottom:spacing.md },
-  menuRow:      { flexDirection:"row", justifyContent:"space-between", alignItems:"center", paddingVertical:spacing.md },
+  menuCard: { marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
+  menuRow:      { flexDirection:"row", justifyContent:"space-between", alignItems:"center", paddingVertical:spacing.base },
   menuLeft:     { flexDirection:"row", alignItems:"center" },
-  menuEmoji:    { fontSize:18, marginRight:spacing.md },
-  menuLabel:    { fontSize:typography.fontSize.md, color:colors.textPrimary },
+  menuEmoji:    { fontSize:18, marginRight:spacing.base },
+  menuLabel: { fontSize: typography.fontSize.md, color: colors.textPrimary, fontFamily: typography.family.medium },
   menuRight:    { flexDirection:"row", alignItems:"center", gap:spacing.sm },
   menuValue:    { fontSize:typography.fontSize.sm, color:colors.textSecondary },
   menuArrow:    { fontSize:20, color:colors.textSecondary },
-  divider:      { height:1, backgroundColor:"#F3F4F6" },
-  logoutBtn:    { marginHorizontal:spacing.base, backgroundColor:"#FEE2E2", borderRadius:14, padding:spacing.lg, alignItems:"center" },
-  logoutText:   { color:"#DC2626", fontSize:typography.fontSize.base, fontWeight:typography.fontWeight.semiBold },
-  version:      { textAlign:"center", color:colors.textSecondary, fontSize:typography.fontSize.xs, marginTop:spacing.md },
+  divider: { height: 1, backgroundColor: colors.divider },
+  logoutBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, backgroundColor: "#FBEDE8", borderRadius: borderRadius.full, paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center", borderWidth: 1, borderColor: "rgba(216,92,74,0.18)" },
+  logoutText: { color: colors.error, fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold },
+  version:      { textAlign:"center", color:colors.textSecondary, fontSize:typography.fontSize.xs, marginTop:spacing.base },
 });
