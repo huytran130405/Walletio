@@ -1,38 +1,44 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import TabNavigator         from "./TabNavigator";
+import TabNavigator from "./TabNavigator";
 
-// Push screens
-import Transactions         from "../screens/Transactions";
-import BudgetPlanning       from "../screens/BudgetPlanning";
-import TransactionDetail    from "../screens/Transactions/TransactionDetail";
-import CategoryManagement   from "../screens/Categories/CategoryManagement";
+import Transactions from "../screens/Transactions";
+import BudgetPlanning from "../screens/BudgetPlanning";
+import TransactionDetail from "../screens/Transactions/TransactionDetail";
+import WalletDetail from "../screens/MyWallets/WalletDetail";
+import TransferHistory from "../screens/MyWallets/TransferHistory";
+import ExpenseHistory from "../screens/MyWallets/ExpenseHistory";
+import CategoryManagement from "../screens/Categories/CategoryManagement";
 import SpendingGroupManagement from "../screens/SpendingGroups/SpendingGroupManagement";
 
 // Modal screens
-import AddWalletModal       from "../screens/MyWallets/AddWalletModal";
-import TransferMoneyModal   from "../screens/MyWallets/TransferMoneyModal";
-import AddBudgetModal       from "../screens/BudgetPlanning/AddBudgetModal";
-import EditBudgetModal      from "../screens/BudgetPlanning/EditBudgetModal";
+import AddWalletModal from "../screens/MyWallets/AddWalletModal";
+import EditWalletModal from "../screens/MyWallets/EditWalletModal";
+import TransferMoneyModal from "../screens/MyWallets/TransferMoneyModal";
+import AddBudgetModal from "../screens/BudgetPlanning/AddBudgetModal";
+import EditBudgetModal from "../screens/BudgetPlanning/EditBudgetModal";
 import BudgetStructureEditor from "../screens/BudgetPlanning/BudgetStructureEditor";
-import CreateTransaction    from "../screens/CreateTransaction";
+import CreateTransaction from "../screens/CreateTransaction";
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Root — tabs */}
-      <Stack.Screen name="MainTabs"           component={TabNavigator} />
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
 
-      {/* ── Push screens ── */}
-      <Stack.Screen name="Transactions"       component={Transactions} />
-      <Stack.Screen name="BudgetPlanning"     component={BudgetPlanning} />
-      <Stack.Screen name="TransactionDetail"  component={TransactionDetail} />
+      <Stack.Screen name="Transactions" component={Transactions} />
+      <Stack.Screen name="BudgetPlanning" component={BudgetPlanning} />
+      <Stack.Screen name="TransactionDetail" component={TransactionDetail} />
+      <Stack.Screen name="WalletDetail" component={WalletDetail} />
+      <Stack.Screen name="TransferHistory" component={TransferHistory} />
+      <Stack.Screen name="ExpenseHistory" component={ExpenseHistory} />
       <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
-      <Stack.Screen name="SpendingGroupManagement" component={SpendingGroupManagement} />
+      <Stack.Screen
+        name="SpendingGroupManagement"
+        component={SpendingGroupManagement}
+      />
 
-      {/* ── Modal screens ── */}
       <Stack.Screen
         name="CreateTransaction"
         component={CreateTransaction}
@@ -41,6 +47,11 @@ export default function AppNavigator() {
       <Stack.Screen
         name="AddWallet"
         component={AddWalletModal}
+        options={{ presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="EditWallet"
+        component={EditWalletModal}
         options={{ presentation: "modal" }}
       />
       <Stack.Screen
