@@ -16,6 +16,8 @@ import WalletDetail from "../screens/MyWallets/WalletDetail";
 import TransferHistory from "../screens/MyWallets/TransferHistory";
 import ExpenseHistory from "../screens/MyWallets/ExpenseHistory";
 import EditProfile from "../screens/AccountSettings/EditProfile";
+import CategoryManagement from "../screens/Categories/CategoryManagement";
+import SpendingGroupManagement from "../screens/SpendingGroups/SpendingGroupManagement";
 
 // Modal screens
 import AddWalletModal from "../screens/MyWallets/AddWalletModal";
@@ -23,6 +25,7 @@ import EditWalletModal from "../screens/MyWallets/EditWalletModal";
 import TransferMoneyModal from "../screens/MyWallets/TransferMoneyModal";
 import AddBudgetModal from "../screens/BudgetPlanning/AddBudgetModal";
 import EditBudgetModal from "../screens/BudgetPlanning/EditBudgetModal";
+import BudgetStructureEditor from "../screens/BudgetPlanning/BudgetStructureEditor";
 import CreateTransaction from "../screens/CreateTransaction";
 
 const Stack = createNativeStackNavigator();
@@ -51,6 +54,11 @@ export default function AppNavigator() {
       <Stack.Screen name="TransferHistory" component={TransferHistory} />
       <Stack.Screen name="ExpenseHistory" component={ExpenseHistory} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
+      <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
+      <Stack.Screen
+        name="SpendingGroupManagement"
+        component={SpendingGroupManagement}
+      />
 
       <Stack.Screen
         name="CreateTransaction"
@@ -80,6 +88,11 @@ export default function AppNavigator() {
       <Stack.Screen
         name="EditBudget"
         component={EditBudgetModal}
+        options={{ presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="BudgetStructureEditor"
+        component={BudgetStructureEditor}
         options={{ presentation: "modal" }}
       />
     </Stack.Navigator>

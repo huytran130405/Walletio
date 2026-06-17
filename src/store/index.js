@@ -4,6 +4,7 @@ import { walletReducer }      from "./slices/walletSlice";
 import { transactionReducer } from "./slices/transactionSlice";
 import { budgetReducer }      from "./slices/budgetSlice";
 import { categoryReducer }    from "./slices/categorySlice";
+import { spendingGroupReducer } from "./slices/spendingGroupSlice";
 import { emotionReducer }     from "./slices/emotionSlice";
 import { transferReducer }    from "./slices/transferSlice";
 
@@ -14,6 +15,7 @@ export const mystore = configureStore({
     transactions: transactionReducer,
     budget: budgetReducer,
     categories: categoryReducer,
+    spendingGroups: spendingGroupReducer,
     emotions: emotionReducer,
     transfers: transferReducer,
   },

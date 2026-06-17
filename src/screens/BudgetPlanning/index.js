@@ -1,169 +1,542 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, SafeAreaView, Alert,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  FlatList,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchBudgets, deleteBudget, selectBudgetSummary } from "../../store/slices/budgetSlice";
-import CategoryRow from "../../components/common/CategoryRow";
-import { colors, gradients, shadows } from "../../theme/colors";
+import { useSelector } from "react-redux";
+import {
+  selectBudgetSummary,
+  selectMonthlyBudget,
+} from "../../store/slices/budgetSlice";
+import { selectExpenseByCategory } from "../../store/slices/transactionSlice";
+import BudgetHeroCard from "./components/BudgetHeroCard";
+import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
 
+const monthNames = [
+  "Tháng 1",
+  "Tháng 2",
+  "Tháng 3",
+  "Tháng 4",
+  "Tháng 5",
+  "Tháng 6",
+  "Tháng 7",
+  "Tháng 8",
+  "Tháng 9",
+  "Tháng 10",
+  "Tháng 11",
+  "Tháng 12",
+];
+
+const money = (value = 0) => `${Math.max(value, 0).toLocaleString("vi-VN")}đ`;
+const signedMoney = (value = 0) =>
+  `${value.toLocaleString("vi-VN", { maximumFractionDigits: 0 })}đ`;
+
 export default function BudgetPlanning({ navigation }) {
-  const dispatch = useDispatch();
+  const now = new Date();
+  const canGoBack = navigation.canGoBack?.() ?? false;
+  const [selectedDate, setSelectedDate] = useState({
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+  });
 
-  const now   = new Date();
-  const month = now.getMonth() + 1;
-  const year  = now.getFullYear();
+  const { month, year } = selectedDate;
+  const monthlyBudget = useSelector((state) =>
+    selectMonthlyBudget(state, month, year),
+  );
+  const budgetSummary = useSelector((state) =>
+    selectBudgetSummary(state, month, year),
+  );
+  const expenseByCategory = useSelector((state) =>
+    selectExpenseByCategory(state, month, year),
+  );
+  const categories = useSelector((state) =>
+    state.categories.categories.filter((category) => category.type === "expense"),
+  );
+  const groups = useSelector((state) =>
+    state.spendingGroups.groups.filter((group) => group.id !== "group_income"),
+  );
 
-  const budgetSummary = useSelector((s) => selectBudgetSummary(s, month, year));
+  const allocated = budgetSummary.reduce(
+    (sum, budget) => sum + (budget.limit ?? 0),
+    0,
+  );
+  const unallocated = (monthlyBudget.amount ?? 0) - allocated;
 
-  useEffect(() => {
-    dispatch(fetchBudgets());
-  }, []);
+  const listData = useMemo(() => {
+    const allocationByCategory = new Map(
+      budgetSummary.map((budget) => [budget.categoryId, budget]),
+    );
+    const spentByCategory = new Map(
+      expenseByCategory.map((category) => [category.name, category.amount]),
+    );
+    const rows = [];
 
-  const totalLimit = budgetSummary.reduce((s, b) => s + b.limit, 0);
-  const totalSpent = budgetSummary.reduce((s, b) => s + b.spent, 0);
-  const overallPct = totalLimit > 0 ? totalSpent / totalLimit : 0;
+    groups.forEach((group) => {
+      const groupCategories = categories.filter(
+        (category) => category.groupId === group.id,
+      );
+      rows.push({
+        type: "group",
+        id: group.id,
+        group,
+        categoryCount: groupCategories.length,
+      });
 
-  // Group by groupTitle
-  const sections = useMemo(() => {
-    const groups = {};
-    budgetSummary.forEach((b) => {
-      const key = b.groupTitle ?? "Khác";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(b);
+      if (groupCategories.length === 0) {
+        rows.push({
+          type: "emptyGroup",
+          id: `${group.id}_empty`,
+          group,
+        });
+        return;
+      }
+
+      groupCategories.forEach((category) => {
+        const budget = allocationByCategory.get(category.id);
+        rows.push({
+          type: "category",
+          id: category.id,
+          group,
+          category,
+          budget,
+          allocated: budget?.limit ?? 0,
+          spent: budget?.spent ?? spentByCategory.get(category.name) ?? 0,
+          remaining:
+            (budget?.limit ?? 0) -
+            (budget?.spent ?? spentByCategory.get(category.name) ?? 0),
+        });
+      });
     });
-    return Object.entries(groups).map(([title, items]) => ({ title, items }));
-  }, [budgetSummary]);
 
-  const handleDelete = (budget) => {
-    Alert.alert(
-      "Xoá ngân sách",
-      `Xoá ngân sách "${budget.category}"?`,
-      [
-        { text: "Huỷ", style: "cancel" },
-        { text: "Xoá", style: "destructive", onPress: () => dispatch(deleteBudget(budget.id)) },
-      ]
+    return rows;
+  }, [budgetSummary, categories, expenseByCategory, groups]);
+
+  const moveMonth = (direction) => {
+    setSelectedDate((current) => {
+      const date = new Date(current.year, current.month - 1 + direction, 1);
+      return { month: date.getMonth() + 1, year: date.getFullYear() };
+    });
+  };
+
+  const openAllocation = (category) => {
+    navigation.navigate("AddBudget", {
+      month,
+      year,
+      categoryId: category?.id,
+    });
+  };
+
+  const openEditor = (groupId) => {
+    navigation.navigate("BudgetStructureEditor", { month, year, groupId });
+  };
+
+  const renderHeader = () => (
+    <View>
+      <Animated.View
+        entering={FadeInDown.duration(420)}
+        style={styles.header}
+      >
+        {canGoBack ? (
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.78}
+          >
+            <Ionicons name="chevron-back" size={21} color={colors.textPrimary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.iconButton}>
+            <Ionicons name="wallet-outline" size={20} color={colors.textPrimary} />
+          </View>
+        )}
+
+        <View style={styles.titleBlock}>
+          <Text style={styles.headerTitle}>Budget</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => openEditor()}
+          activeOpacity={0.78}
+        >
+          <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
+      </Animated.View>
+
+      <Animated.View
+        entering={FadeInDown.delay(60).duration(420)}
+        style={styles.monthPicker}
+      >
+        <TouchableOpacity
+          style={styles.monthButton}
+          onPress={() => moveMonth(-1)}
+          activeOpacity={0.78}
+        >
+          <Ionicons name="chevron-back" size={18} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <View style={styles.monthLabelBox}>
+          <Text style={styles.monthLabel}>
+            {monthNames[month - 1]} {year}
+          </Text>
+          <Text style={styles.monthSubLabel}>Chọn tháng và năm</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.monthButton}
+          onPress={() => moveMonth(1)}
+          activeOpacity={0.78}
+        >
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={colors.textPrimary}
+          />
+        </TouchableOpacity>
+      </Animated.View>
+
+      <Animated.View entering={FadeInUp.duration(520)}>
+        <BudgetHeroCard
+          allocated={allocated}
+          unallocated={unallocated}
+          onAllocate={() => openAllocation()}
+          onEdit={() => openEditor()}
+        />
+      </Animated.View>
+    </View>
+  );
+
+  const renderItem = ({ item }) => {
+    if (item.type === "group") {
+      return (
+        <View style={styles.groupHeader}>
+          <View style={[styles.groupIcon, { backgroundColor: `${item.group.color}18` }]}>
+            <Ionicons
+              name={item.group.icon}
+              size={18}
+              color={item.group.color}
+            />
+          </View>
+          <View style={styles.groupCopy}>
+            <Text style={styles.groupTitle}>{item.group.title}</Text>
+            <Text style={styles.groupMeta}>
+              {item.categoryCount} danh mục
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (item.type === "emptyGroup") {
+      return (
+        <TouchableOpacity
+          style={styles.emptyGroupCard}
+          onPress={() => openEditor(item.group.id)}
+          activeOpacity={0.82}
+        >
+          <View style={styles.emptyIcon}>
+            <Ionicons name="add" size={20} color={colors.primary} />
+          </View>
+          <View style={styles.emptyCopy}>
+            <Text style={styles.emptyTitle}>Thêm danh mục</Text>
+            <Text style={styles.emptyText}>
+              {item.group.title} đang trống, tạo category đầu tiên cho đầu mục này.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+      );
+    }
+
+    const percent =
+      item.allocated > 0 ? Math.min(item.spent / item.allocated, 1) : 0;
+    const remainingColor =
+      item.remaining < 0 ? colors.expense : colors.textPrimary;
+
+    return (
+      <TouchableOpacity
+        style={styles.categoryCard}
+        onPress={() => openAllocation(item.category)}
+        activeOpacity={0.82}
+      >
+        <View style={styles.categoryTop}>
+          <View
+            style={[
+              styles.categoryIcon,
+              { backgroundColor: `${item.category.color}18` },
+            ]}
+          >
+            <Ionicons
+              name={item.category.icon}
+              size={18}
+              color={item.category.color}
+            />
+          </View>
+          <View style={styles.categoryCopy}>
+            <Text style={styles.categoryName}>{item.category.name}</Text>
+            <Text style={styles.categoryStatus}>
+              {item.allocated > 0 ? "Đã được giao tiền" : "Chưa phân bổ"}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </View>
+
+        <View style={styles.categoryMetrics}>
+          <View style={styles.metricCell}>
+            <Text style={styles.metricLabel}>Phân bổ</Text>
+            <Text style={styles.metricValue}>{money(item.allocated)}</Text>
+          </View>
+          <View style={styles.metricCell}>
+            <Text style={styles.metricLabel}>Đã tiêu</Text>
+            <Text style={styles.metricValue}>{money(item.spent)}</Text>
+          </View>
+          <View style={styles.metricCell}>
+            <Text style={styles.metricLabel}>Còn lại</Text>
+            <Text style={[styles.metricValue, { color: remainingColor }]}>
+              {signedMoney(item.remaining)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.categoryTrack}>
+          <View
+            style={[
+              styles.categoryFill,
+              {
+                width: `${percent * 100}%`,
+                backgroundColor:
+                  item.remaining < 0 ? colors.expense : item.category.color,
+              },
+            ]}
+          />
+        </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backIcon}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Phân bổ ngân sách</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("AddBudget")}>
-            <Text style={styles.addBtn}>+ Thêm</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Overview card */}
-        <Animated.View entering={FadeInUp.duration(520).springify()} style={styles.overviewCard}>
-          <LinearGradient colors={gradients.sky} style={styles.overviewGradient}>
-          <View style={styles.overviewRow}>
-            <View>
-              <Text style={styles.overviewLabel}>Tổng hạn mức</Text>
-              <Text style={styles.overviewAmount}>{totalLimit.toLocaleString("vi-VN")}₫</Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.overviewLabel}>Đã chi</Text>
-              <Text style={[styles.overviewAmount, { color: colors.expense }]}>
-                {totalSpent.toLocaleString("vi-VN")}₫
-              </Text>
-            </View>
-          </View>
-          {/* Overall progress bar */}
-          <View style={styles.overallBarTrack}>
-            <View
-              style={[
-                styles.overallBar,
-                {
-                  width: `${Math.min(overallPct * 100, 100)}%`,
-                  backgroundColor: overallPct > 0.9 ? colors.expense : colors.primary,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.overallPct}>{Math.round(overallPct * 100)}% đã sử dụng</Text>
-          </LinearGradient>
-        </Animated.View>
-
-        {/* Title */}
-        <View style={styles.titleBlock}>
-          <Text style={styles.subtitle}>Tháng {month}/{year}</Text>
-        </View>
-
-        {/* Sections */}
-        {sections.map((section, si) => (
-          <View key={si} style={styles.section}>
-            <Text style={styles.sectionLabel}>{section.title}</Text>
-            <View style={styles.sectionCard}>
-              {section.items.map((item, ii) => (
-                <View key={item.id ?? ii}>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate("EditBudget", { budget: item })}
-                    onLongPress={() => handleDelete(item)}
-                    activeOpacity={0.7}
-                  >
-                    <CategoryRow
-                      name={item.category}
-                      amount={item.spent}
-                      budget={item.limit}
-                      showBar={true}
-                      barColor={item.spent > item.limit ? colors.expense : item.color ?? colors.primary}
-                    />
-                  </TouchableOpacity>
-                  {ii < section.items.length - 1 && <View style={styles.divider} />}
-                </View>
-              ))}
-            </View>
-          </View>
-        ))}
-
-        {/* Add button */}
-        <TouchableOpacity style={styles.addBudgetBtn} onPress={() => navigation.navigate("AddBudget")}>
-          <Text style={styles.addBudgetText}>+ Thêm hạng mục ngân sách</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.hint}>💡 Nhấn giữ để xoá · Nhấn để chỉnh sửa</Text>
-
-        <View style={{ height: 30 }} />
-      </ScrollView>
+      <FlatList
+        data={listData}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  container:     { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  backBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", ...shadows.soft },
-  backIcon: { fontSize: 18, color: colors.textPrimary },
-  headerTitle: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
-  addBtn: { fontSize: typography.fontSize.md, color: colors.primary, fontFamily: typography.family.semiBold },
-  overviewCard: { marginHorizontal: spacing.md, borderRadius: borderRadius.xxl, marginBottom: spacing.lg, overflow: "hidden", borderWidth: 1, borderColor: colors.border, ...shadows.soft },
-  overviewGradient: { padding: spacing.lg },
-  overviewRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md },
-  overviewLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
-  overviewAmount: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary, marginTop: 4 },
-  overallBarTrack:{ height: 10, backgroundColor: "rgba(47,125,90,0.12)", borderRadius: 99, overflow: "hidden", marginBottom: spacing.xs },
-  overallBar:    { height: "100%", borderRadius: 99 },
-  overallPct: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
-  titleBlock: { paddingHorizontal: spacing.md, marginBottom: spacing.sm },
-  subtitle: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
-  section: { paddingHorizontal: spacing.md, marginBottom: spacing.lg },
-  sectionLabel: { fontSize: typography.fontSize.md, fontFamily: typography.family.bold, color: colors.textPrimary, marginBottom: spacing.sm },
-  sectionCard: { backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
-  divider: { height: 1, backgroundColor: colors.divider },
-  addBudgetBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderWidth: 1.5, borderColor: colors.primaryLight, borderStyle: "dashed", borderRadius: borderRadius.full, paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center", marginTop: spacing.sm, backgroundColor: "rgba(255,253,247,0.7)" },
-  addBudgetText: { color: colors.primary, fontSize: typography.fontSize.md, fontFamily: typography.family.semiBold },
-  hint:          { textAlign: "center", fontSize: typography.fontSize.xs, color: colors.textSecondary, marginTop: spacing.base },
+  listContent: { paddingBottom: spacing.xxl },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.base,
+  },
+  iconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.soft,
+  },
+  titleBlock: { alignItems: "center" },
+  headerTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.family.bold,
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+  monthPicker: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.base,
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  monthButton: {
+    width: 42,
+    height: 42,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surfaceAlt,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  monthLabelBox: { alignItems: "center" },
+  monthLabel: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.family.bold,
+    color: colors.textPrimary,
+  },
+  monthSubLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  listIntro: {
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  sectionTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.family.bold,
+    color: colors.textPrimary,
+  },
+  sectionHint: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  groupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+  },
+  groupIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.sm,
+  },
+  groupCopy: { flex: 1 },
+  groupTitle: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.family.bold,
+    color: colors.textPrimary,
+  },
+  groupMeta: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  categoryCard: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.base,
+    ...shadows.soft,
+  },
+  categoryTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.base,
+  },
+  categoryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: borderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.sm,
+  },
+  categoryCopy: { flex: 1 },
+  categoryName: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.family.bold,
+    color: colors.textPrimary,
+  },
+  categoryStatus: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  categoryMetrics: {
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  metricCell: {
+    flex: 1,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceAlt,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  metricLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.family.bold,
+    color: colors.textPrimary,
+  },
+  categoryTrack: {
+    height: 8,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surfaceAlt,
+    overflow: "hidden",
+  },
+  categoryFill: {
+    height: "100%",
+    borderRadius: borderRadius.full,
+  },
+  emptyGroupCard: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    padding: spacing.base,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  emptyIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.sm,
+  },
+  emptyCopy: { flex: 1 },
+  emptyTitle: {
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.family.bold,
+    color: colors.textPrimary,
+  },
+  emptyText: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 17,
+  },
 });
