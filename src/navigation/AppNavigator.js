@@ -6,7 +6,6 @@ import TabNavigator from "./TabNavigator";
 // Auth screens
 import Login from "../screens/Auth/Login";
 import Register from "../screens/Auth/Register";
-import ForgotPassword from "../screens/Auth/ForgotPassword";
 
 // Push screens
 import Transactions from "../screens/Transactions";
@@ -37,7 +36,6 @@ export default function AppNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Register" component={Register} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       </Stack.Navigator>
     );
   }
