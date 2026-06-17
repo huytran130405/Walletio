@@ -77,10 +77,6 @@ export default function Login({ navigation }) {
             />
           </View>
 
-          <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")} style={styles.textAction}>
-            <Text style={styles.textActionLabel}>Quên mật khẩu?</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin}>
             <LinearGradient colors={gradients.forest} style={styles.primaryGradient}>
               <Text style={styles.primaryText}>Đăng nhập</Text>
@@ -156,9 +152,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     fontFamily: typography.family.medium,
   },
-  textAction: { alignSelf: "flex-end", paddingVertical: spacing.base },
-  textActionLabel: { color: colors.primary, fontFamily: typography.family.semiBold, fontSize: typography.fontSize.sm },
-  primaryBtn: { borderRadius: borderRadius.full, overflow: "hidden", marginTop: spacing.xs },
+  primaryBtn: { borderRadius: borderRadius.full, overflow: "hidden", marginTop: spacing.lg },
   primaryGradient: { paddingVertical: spacing.base, alignItems: "center" },
   primaryText: { color: colors.textInverse, fontSize: typography.fontSize.base, fontFamily: typography.family.bold },
   footer: { flexDirection: "row", justifyContent: "center", gap: spacing.xs, marginTop: spacing.lg },

@@ -17,6 +17,7 @@ import { registerLocal } from "../../store/slices/authSlice";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import GoogleAuthButton from "./components/GoogleAuthButton";
 
 export default function Register({ navigation }) {
   const dispatch = useDispatch();
@@ -34,6 +35,10 @@ export default function Register({ navigation }) {
       return;
     }
     dispatch(registerLocal({ name: name.trim(), email: email.trim() }));
+  };
+
+  const handleGoogleRegister = () => {
+    dispatch(registerLocal({ name: "Google User", email: "google.user@walletio.app" }));
   };
 
   return (
@@ -96,6 +101,14 @@ export default function Register({ navigation }) {
               <Text style={styles.primaryText}>Tạo tài khoản</Text>
             </LinearGradient>
           </TouchableOpacity>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>hoặc</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <GoogleAuthButton label="Tạo tài khoản bằng Google" onPress={handleGoogleRegister} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -129,4 +142,7 @@ const styles = StyleSheet.create({
   primaryBtn: { borderRadius: borderRadius.full, overflow: "hidden", marginTop: spacing.lg },
   primaryGradient: { paddingVertical: spacing.base, alignItems: "center" },
   primaryText: { color: colors.textInverse, fontSize: typography.fontSize.base, fontFamily: typography.family.bold },
+  dividerRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginVertical: spacing.base },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
+  dividerText: { color: colors.textMuted, fontFamily: typography.family.semiBold, fontSize: typography.fontSize.sm },
 });
