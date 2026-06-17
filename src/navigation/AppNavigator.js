@@ -9,6 +9,7 @@ import TransactionDetail from "../screens/Transactions/TransactionDetail";
 import WalletDetail from "../screens/MyWallets/WalletDetail";
 import TransferHistory from "../screens/MyWallets/TransferHistory";
 import ExpenseHistory from "../screens/MyWallets/ExpenseHistory";
+import EditProfile from "../screens/AccountSettings/EditProfile";
 
 // Modal screens
 import AddWalletModal from "../screens/MyWallets/AddWalletModal";
@@ -31,6 +32,7 @@ export default function AppNavigator() {
       <Stack.Screen name="WalletDetail" component={WalletDetail} />
       <Stack.Screen name="TransferHistory" component={TransferHistory} />
       <Stack.Screen name="ExpenseHistory" component={ExpenseHistory} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
 
       <Stack.Screen
         name="CreateTransaction"
