@@ -16,16 +16,16 @@ const daysAgo = (n) => {
 };
 
 const MOCK_TRANSACTIONS = [
-  { id: "t1", description: "Cà phê sáng",   category: "Ăn uống",   amount: 45000,   type: "expense", date: fmtDate(today),      walletId: "w1" },
-  { id: "t2", description: "Ăn trưa",       category: "Ăn uống",   amount: 80000,   type: "expense", date: fmtDate(today),      walletId: "w1" },
+  { id: "t1", description: "Cà phê sáng",   note: "Cà phê trước giờ học", categoryId: "cat_food", category: "Ăn uống",   amount: 45000,   type: "expense", direction: "out", expense_date: fmtDate(today), date: fmtDate(today),      walletId: "w1", emotionId: "emotion_calm" },
+  { id: "t2", description: "Ăn trưa",       note: "Cơm trưa ở căn tin", categoryId: "cat_food", category: "Ăn uống",   amount: 80000,   type: "expense", direction: "out", expense_date: fmtDate(today), date: fmtDate(today),      walletId: "w1", emotionId: "emotion_happy" },
   { id: "t3", description: "Lương tháng",    category: "Lương",     amount: 15000000, type: "income", date: fmtDate(daysAgo(1)), walletId: "w2" },
-  { id: "t4", description: "Mua đồ gia dụng",category: "Mua sắm",   amount: 450000,  type: "expense", date: fmtDate(daysAgo(1)), walletId: "w2" },
+  { id: "t4", description: "Mua đồ gia dụng", note: "Thêm đồ cho phòng", categoryId: "cat_shopping", category: "Mua sắm",   amount: 450000,  type: "expense", direction: "out", expense_date: fmtDate(daysAgo(1)), date: fmtDate(daysAgo(1)), walletId: "w2", emotionId: "emotion_proud" },
   { id: "t5", description: "Tiền thưởng",    category: "Lương",     amount: 2000000, type: "income",  date: fmtDate(daysAgo(2)), walletId: "w2" },
-  { id: "t6", description: "Grab đi làm",    category: "Di chuyển", amount: 35000,   type: "expense", date: fmtDate(daysAgo(2)), walletId: "w1" },
-  { id: "t7", description: "Siêu thị",       category: "Mua sắm",   amount: 320000,  type: "expense", date: fmtDate(daysAgo(3)), walletId: "w1" },
-  { id: "t8", description: "Tiền điện",      category: "Nhà cửa",   amount: 580000,  type: "expense", date: fmtDate(daysAgo(5)), walletId: "w2" },
-  { id: "t9", description: "Netflix",        category: "Giải trí",  amount: 180000,  type: "expense", date: fmtDate(daysAgo(7)), walletId: "w3" },
-  { id: "t10",description: "Khám bệnh",      category: "Sức khoẻ",  amount: 200000,  type: "expense", date: fmtDate(daysAgo(8)), walletId: "w1" },
+  { id: "t6", description: "Grab đi làm",    note: "Đi muộn nên gọi xe", categoryId: "cat_transport", category: "Di chuyển", amount: 35000,   type: "expense", direction: "out", expense_date: fmtDate(daysAgo(2)), date: fmtDate(daysAgo(2)), walletId: "w1", emotionId: "emotion_unsure" },
+  { id: "t7", description: "Siêu thị",       note: "Đồ ăn cả tuần", categoryId: "cat_shopping", category: "Mua sắm",   amount: 320000,  type: "expense", direction: "out", expense_date: fmtDate(daysAgo(3)), date: fmtDate(daysAgo(3)), walletId: "w1", emotionId: "emotion_calm" },
+  { id: "t8", description: "Tiền điện",      note: "Hoá đơn tháng này", categoryId: "cat_home", category: "Nhà cửa",   amount: 580000,  type: "expense", direction: "out", expense_date: fmtDate(daysAgo(5)), date: fmtDate(daysAgo(5)), walletId: "w2", emotionId: "emotion_stressed" },
+  { id: "t9", description: "Netflix",        note: "Giải trí cuối tuần", categoryId: "cat_entertainment", category: "Giải trí",  amount: 180000,  type: "expense", direction: "out", expense_date: fmtDate(daysAgo(7)), date: fmtDate(daysAgo(7)), walletId: "w3", emotionId: "emotion_happy" },
+  { id: "t10",description: "Khám bệnh",      note: "Kiểm tra sức khoẻ", categoryId: "cat_health", category: "Sức khoẻ",  amount: 200000,  type: "expense", direction: "out", expense_date: fmtDate(daysAgo(8)), date: fmtDate(daysAgo(8)), walletId: "w1", emotionId: "emotion_stressed" },
 ];
 
 const initialState = {
@@ -101,7 +101,27 @@ export const deleteTransaction = createAsyncThunk(
 export const transactionSlice = createSlice({
   name: "transaction",
   initialState,
-  reducers: {},
+  reducers: {
+    createTransactionLocal: (state, action) => {
+      state.transactions.unshift({
+        id: "t" + Date.now(),
+        date: fmtDate(new Date()),
+        description: action.payload.note || action.payload.category || "Giao dịch",
+        ...action.payload,
+      });
+      state.status = "success";
+    },
+    updateTransactionLocal: (state, action) => {
+      const { id, ...updates } = action.payload;
+      const index = state.transactions.findIndex((transaction) => transaction.id === id);
+      if (index !== -1) state.transactions[index] = { ...state.transactions[index], ...updates };
+      state.status = "success";
+    },
+    deleteTransactionLocal: (state, action) => {
+      state.transactions = state.transactions.filter((transaction) => transaction.id !== action.payload);
+      state.status = "success";
+    },
+  },
   extraReducers: (builder) => {
     builder
       // fetchTransactions
@@ -171,4 +191,5 @@ export const selectExpenseByCategory = (state, month, year) => {
 
 // ─── Reducer ───────────────────────────────────────────────────────────────
 
+export const { createTransactionLocal, updateTransactionLocal, deleteTransactionLocal } = transactionSlice.actions;
 export const transactionReducer = transactionSlice.reducer;

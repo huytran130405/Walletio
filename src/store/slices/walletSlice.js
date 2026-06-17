@@ -3,9 +3,9 @@ import { API_BASE_URL } from "../../utils/constants";
 
 // ── Mock data khởi tạo (offline-first) ────────────────────────────────────────
 const MOCK_WALLETS = [
-  { id: "w1", name: "Tiền mặt",            balance: 2000000,  type: "cash",   color: "#22C55E" },
-  { id: "w2", name: "Tài khoản ngân hàng", balance: 10000000, type: "bank",   color: "#3B82F6" },
-  { id: "w3", name: "Ví điện tử",          balance: 3500000,  type: "ewallet",color: "#A855F7" },
+  { id: "w1", name: "Tiền mặt",            balance: 2000000,  type: "cash",   color: "#22C55E", icon: "cash-outline", isDefault: true },
+  { id: "w2", name: "Tài khoản ngân hàng", balance: 10000000, type: "bank",   color: "#3B82F6", icon: "card-outline", isDefault: false },
+  { id: "w3", name: "Ví điện tử",          balance: 3500000,  type: "ewallet",color: "#A855F7", icon: "phone-portrait-outline", isDefault: false },
 ];
 
 const initialState = {
@@ -93,7 +93,47 @@ export const transferBetweenWallets = createAsyncThunk(
 export const walletSlice = createSlice({
   name: "wallet",
   initialState,
-  reducers: {},
+  reducers: {
+    addWalletLocal: (state, action) => {
+      state.wallets.push({
+        id: "w" + Date.now(),
+        balance: 0,
+        type: "cash",
+        color: "#2F7D5A",
+        icon: "wallet-outline",
+        isDefault: false,
+        ...action.payload,
+      });
+      state.status = "success";
+    },
+    updateWalletLocal: (state, action) => {
+      const { id, isDefault, ...updates } = action.payload;
+      const index = state.wallets.findIndex((wallet) => wallet.id === id);
+      if (index === -1) return;
+      if (isDefault) {
+        state.wallets.forEach((wallet) => {
+          wallet.isDefault = wallet.id === id;
+        });
+      }
+      state.wallets[index] = { ...state.wallets[index], ...updates, isDefault: Boolean(isDefault) || state.wallets[index].isDefault };
+      state.status = "success";
+    },
+    deleteWalletLocal: (state, action) => {
+      state.wallets = state.wallets.filter((wallet) => wallet.id !== action.payload);
+      if (state.wallets.length > 0 && !state.wallets.some((wallet) => wallet.isDefault)) {
+        state.wallets[0].isDefault = true;
+      }
+      state.status = "success";
+    },
+    transferWalletsLocal: (state, action) => {
+      const { fromId, toId, amount } = action.payload;
+      const from = state.wallets.find((wallet) => wallet.id === fromId);
+      const to = state.wallets.find((wallet) => wallet.id === toId);
+      if (from) from.balance -= amount;
+      if (to) to.balance += amount;
+      state.status = "success";
+    },
+  },
   extraReducers: (builder) => {
     builder
       // fetchWallets
@@ -150,4 +190,5 @@ export const selectTotalBalance = (state) =>
 
 // ─── Reducer ───────────────────────────────────────────────────────────────
 
+export const { addWalletLocal, updateWalletLocal, deleteWalletLocal, transferWalletsLocal } = walletSlice.actions;
 export const walletReducer = walletSlice.reducer;
