@@ -6,12 +6,15 @@ import TabNavigator         from "./TabNavigator";
 import Transactions         from "../screens/Transactions";
 import BudgetPlanning       from "../screens/BudgetPlanning";
 import TransactionDetail    from "../screens/Transactions/TransactionDetail";
+import CategoryManagement   from "../screens/Categories/CategoryManagement";
+import SpendingGroupManagement from "../screens/SpendingGroups/SpendingGroupManagement";
 
 // Modal screens
 import AddWalletModal       from "../screens/MyWallets/AddWalletModal";
 import TransferMoneyModal   from "../screens/MyWallets/TransferMoneyModal";
 import AddBudgetModal       from "../screens/BudgetPlanning/AddBudgetModal";
 import EditBudgetModal      from "../screens/BudgetPlanning/EditBudgetModal";
+import BudgetStructureEditor from "../screens/BudgetPlanning/BudgetStructureEditor";
 import CreateTransaction    from "../screens/CreateTransaction";
 
 const Stack = createNativeStackNavigator();
@@ -26,6 +29,8 @@ export default function AppNavigator() {
       <Stack.Screen name="Transactions"       component={Transactions} />
       <Stack.Screen name="BudgetPlanning"     component={BudgetPlanning} />
       <Stack.Screen name="TransactionDetail"  component={TransactionDetail} />
+      <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
+      <Stack.Screen name="SpendingGroupManagement" component={SpendingGroupManagement} />
 
       {/* ── Modal screens ── */}
       <Stack.Screen
@@ -51,6 +56,11 @@ export default function AppNavigator() {
       <Stack.Screen
         name="EditBudget"
         component={EditBudgetModal}
+        options={{ presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="BudgetStructureEditor"
+        component={BudgetStructureEditor}
         options={{ presentation: "modal" }}
       />
     </Stack.Navigator>
