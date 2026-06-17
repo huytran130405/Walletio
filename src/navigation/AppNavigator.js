@@ -1,6 +1,12 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useSelector } from "react-redux";
 import TabNavigator from "./TabNavigator";
+
+// Auth screens
+import Login from "../screens/Auth/Login";
+import Register from "../screens/Auth/Register";
+import ForgotPassword from "../screens/Auth/ForgotPassword";
 
 // Push screens
 import Transactions from "../screens/Transactions";
@@ -21,6 +27,18 @@ import CreateTransaction from "../screens/CreateTransaction";
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
+  const user = useSelector((state) => state.auth.user);
+
+  if (!user) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Register" component={Register} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+      </Stack.Navigator>
+    );
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabNavigator} />

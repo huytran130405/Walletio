@@ -10,8 +10,8 @@ const MOCK_USER = {
 };
 
 const initialState = {
-  user:   MOCK_USER,  // Khởi tạo với mock user để app hoạt động ngay
-  token:  "mock-token",
+  user:   null,
+  token:  null,
   status: "",         // "pending" | "success" | "fail"
 };
 
@@ -82,7 +82,38 @@ export const logoutUser = createAsyncThunk(
 export const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {},
+  reducers: {
+    loginLocal: (state, action) => {
+      const { email, name } = action.payload;
+      state.user = {
+        ...MOCK_USER,
+        email,
+        name: name || email?.split("@")[0] || MOCK_USER.name,
+      };
+      state.token = "mock-token";
+      state.status = "success";
+    },
+    registerLocal: (state, action) => {
+      const { name, email } = action.payload;
+      state.user = {
+        ...MOCK_USER,
+        id: "u_" + Date.now(),
+        name,
+        email,
+      };
+      state.token = "mock-token";
+      state.status = "success";
+    },
+    updateProfileLocal: (state, action) => {
+      state.user = { ...(state.user || MOCK_USER), ...action.payload };
+      state.status = "success";
+    },
+    logoutLocal: (state) => {
+      state.user = null;
+      state.token = null;
+      state.status = "";
+    },
+  },
   extraReducers: (builder) => {
     builder
       // loginUser
@@ -124,4 +155,5 @@ export const authSlice = createSlice({
 
 // ─── Reducer ───────────────────────────────────────────────────────────────
 
+export const { loginLocal, registerLocal, updateProfileLocal, logoutLocal } = authSlice.actions;
 export const authReducer = authSlice.reducer;
