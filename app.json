@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "primaryColor": "#1A9E6E",
-    "icon": "./src/assets/images/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#1A9E6E"
@@ -14,17 +13,26 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#1A9E6E"
-      }
+      "package": "com.huytran13.walletio"
     },
-    "web": {
-      "favicon": "./src/assets/images/favicon.png"
-    },
+    "web": {},
     "plugins": [
       "expo-font",
       "expo-secure-store",
-      "expo-asset"
-    ]
+      "expo-asset",
+      "expo-image-picker",
+      [
+        "expo-notifications",
+        {
+          "color": "#1A9E6E",
+          "sounds": []
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "469e5e48-c186-4921-8cca-5e68b8da9446"
+      }
+    }
   }
 }
