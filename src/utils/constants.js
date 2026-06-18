@@ -8,7 +8,7 @@ export const SCREENS = {
   DASHBOARD:          "Dashboard",
   TRANSACTIONS:       "Transactions",
   CREATE_TRANSACTION: "CreateTransaction",
-  STATISTICS:         "Statistics",
+  ANALYTIC:           "Analytic",
   MY_WALLETS:         "MyWallets",
   BUDGET_PLANNING:    "BudgetPlanning",
   ACCOUNT_SETTINGS:   "AccountSettings",
