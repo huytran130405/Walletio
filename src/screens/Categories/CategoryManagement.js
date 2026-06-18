@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
-import { addCategory, deleteCategory, updateCategory } from "../../store/slices/categorySlice";
+import { addCategory } from "../../store/slices/categorySlice";
 import CategoryIcon from "../../components/common/CategoryIcon";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
@@ -25,31 +25,16 @@ export default function CategoryManagement({ navigation }) {
   const dispatch = useDispatch();
   const categories = useSelector((state) => state.categories.categories);
   const groups = useSelector((state) => state.spendingGroups.groups);
-  const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState(COLORS[0]);
   const [icon, setIcon] = useState(ICONS[0]);
   const [groupId, setGroupId] = useState(null);
 
-  const editingCategory = useMemo(
-    () => categories.find((category) => category.id === editingId),
-    [categories, editingId],
-  );
-
   const resetForm = () => {
-    setEditingId(null);
     setName("");
     setColor(COLORS[0]);
     setIcon(ICONS[0]);
     setGroupId(groups[0]?.id ?? null);
-  };
-
-  const startEdit = (category) => {
-    setEditingId(category.id);
-    setName(category.name);
-    setColor(category.color);
-    setIcon(category.icon);
-    setGroupId(category.groupId);
   };
 
   const handleSave = async () => {
@@ -57,34 +42,12 @@ export default function CategoryManagement({ navigation }) {
       Alert.alert("Thiếu tên", "Vui lòng nhập tên danh mục.");
       return;
     }
-    const payload = { name: name.trim(), color, icon, groupId };
     try {
-      if (editingCategory) {
-        await dispatch(updateCategory({ id: editingCategory.id, ...payload })).unwrap();
-      } else {
-        await dispatch(addCategory(payload)).unwrap();
-      }
+      await dispatch(addCategory({ name: name.trim(), color, icon, groupId })).unwrap();
       resetForm();
     } catch (error) {
       Alert.alert("Không lưu được danh mục", error || "Vui lòng thử lại.");
     }
-  };
-
-  const handleDelete = (category) => {
-    Alert.alert("Xoá danh mục", `Xoá "${category.name}"?`, [
-      { text: "Huỷ", style: "cancel" },
-      {
-        text: "Xoá",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await dispatch(deleteCategory(category.id)).unwrap();
-          } catch (error) {
-            Alert.alert("Không xoá được danh mục", error || "Vui lòng thử lại.");
-          }
-        },
-      },
-    ]);
   };
 
   const groupTitle = (id) => groups.find((group) => group.id === id)?.title || "Khác";
@@ -96,14 +59,17 @@ export default function CategoryManagement({ navigation }) {
           <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quản lý danh mục</Text>
-        <TouchableOpacity style={styles.iconBtn} onPress={resetForm}>
-          <Ionicons name="add" size={24} color={colors.textPrimary} />
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => navigation.navigate("DeleteCategory")}
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.error} />
         </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>{editingCategory ? "Sửa danh mục" : "Thêm danh mục"}</Text>
+          <Text style={styles.formTitle}>Thêm danh mục</Text>
           <TextInput
             style={styles.input}
             value={name}
@@ -152,7 +118,7 @@ export default function CategoryManagement({ navigation }) {
           </View>
 
           <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-            <Text style={styles.saveText}>{editingCategory ? "Lưu danh mục" : "Thêm danh mục"}</Text>
+            <Text style={styles.saveText}>Thêm danh mục</Text>
           </TouchableOpacity>
         </View>
 
@@ -162,8 +128,7 @@ export default function CategoryManagement({ navigation }) {
             key={category.id}
             style={styles.row}
             activeOpacity={0.8}
-            onPress={() => startEdit(category)}
-            onLongPress={() => handleDelete(category)}
+            onPress={() => navigation.navigate("EditCategory", { categoryId: category.id })}
           >
             <View style={[styles.rowIcon, { backgroundColor: `${category.color}22` }]}>
               <CategoryIcon icon={category.icon} size={22} color={category.color || colors.primary} />

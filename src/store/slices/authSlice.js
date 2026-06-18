@@ -15,6 +15,7 @@ const normalizeUser = (profile = {}, fallbackEmail = "") => {
 const initialState = {
   user: null,
   token: null,
+  refreshToken: null,
   status: "",
   error: null,
 };
@@ -23,10 +24,11 @@ export const loginUser = createAsyncThunk(
   "/auth/loginUser",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const token = await authService.login({ email, password });
+      const session = await authService.login({ email, password });
+      const token = session?.access_token ?? null;
       if (!token) throw new Error("Backend không trả về access token.");
       const profile = await authService.getProfile(token);
-      return { user: normalizeUser(profile, email), token };
+      return { user: normalizeUser(profile, email), token, refreshToken: session?.refresh_token ?? null };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -43,7 +45,7 @@ export const registerUser = createAsyncThunk(
         throw new Error("Đăng ký thành công. Vui lòng xác nhận email rồi đăng nhập.");
       }
       const profile = await authService.getProfile(token);
-      return { user: normalizeUser(profile, email), token };
+      return { user: normalizeUser(profile, email), token, refreshToken: data?.session?.refresh_token ?? null };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -106,6 +108,7 @@ export const authSlice = createSlice({
     logoutLocal: (state) => {
       state.user = null;
       state.token = null;
+      state.refreshToken = null;
       state.status = "";
       state.error = null;
     },
@@ -120,6 +123,7 @@ export const authSlice = createSlice({
         state.status = "success";
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = "fail";
@@ -134,6 +138,7 @@ export const authSlice = createSlice({
         state.status = "success";
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = "fail";
@@ -184,6 +189,7 @@ export const authSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
         state.token = null;
+        state.refreshToken = null;
         state.status = "";
         state.error = null;
       });

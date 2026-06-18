@@ -39,7 +39,6 @@ const signedMoney = (value = 0) =>
 
 export default function BudgetPlanning({ navigation }) {
   const now = new Date();
-  const canGoBack = navigation.canGoBack?.() ?? false;
   const [selectedDate, setSelectedDate] = useState({
     month: now.getMonth() + 1,
     year: now.getFullYear(),
@@ -144,19 +143,7 @@ export default function BudgetPlanning({ navigation }) {
         entering={FadeInDown.duration(420)}
         style={styles.header}
       >
-        {canGoBack ? (
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.78}
-          >
-            <Ionicons name="chevron-back" size={21} color={colors.textPrimary} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.iconButton}>
-            <Ionicons name="wallet-outline" size={20} color={colors.textPrimary} />
-          </View>
-        )}
+        <View style={styles.headerSpacer} />
 
         <View style={styles.titleBlock}>
           <Text style={styles.headerTitle}>Budget</Text>
@@ -348,6 +335,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadows.soft,
   },
+  headerSpacer: { width: 42, height: 42 },
   titleBlock: { alignItems: "center" },
   headerTitle: {
     fontSize: typography.fontSize.lg,

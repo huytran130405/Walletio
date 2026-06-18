@@ -31,7 +31,7 @@ const FIELDS = [
 ];
 
 /* ─── Main Screen ───────────────────────────────────────────── */
-export default function AccountSettings() {
+export default function AccountSettings({ navigation }) {
   const dispatch = useDispatch();
   const { user, status } = useSelector((s) => s.auth);
   const wallets      = useSelector((s) => s.wallets?.wallets ?? []);
@@ -330,6 +330,42 @@ export default function AccountSettings() {
                 </TouchableOpacity>
               </View>
             )}
+          </Animated.View>
+
+          {/* ── Quản lý danh mục & nhóm chi tiêu ── */}
+          <Animated.View entering={FadeInUp.delay(210).duration(480)} style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Quản lý</Text>
+          </Animated.View>
+          <Animated.View entering={FadeInUp.delay(240).duration(480)} style={styles.infoCard}>
+            <TouchableOpacity
+              style={styles.fieldRow}
+              onPress={() => navigation.navigate("CategoryManagement")}
+              activeOpacity={0.8}
+            >
+              <View style={styles.fieldIcon}>
+                <Ionicons name="pricetags-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={styles.fieldValue}>Quản lý danh mục</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { marginLeft: 34 + spacing.sm }]} />
+
+            <TouchableOpacity
+              style={styles.fieldRow}
+              onPress={() => navigation.navigate("SpendingGroupManagement")}
+              activeOpacity={0.8}
+            >
+              <View style={styles.fieldIcon}>
+                <Ionicons name="albums-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={styles.fieldValue}>Nhóm chi tiêu</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
           </Animated.View>
 
           {/* ── Cancel button (only in edit mode) ── */}

@@ -25,7 +25,11 @@ import WalletDetail from "../screens/MyWallets/WalletDetail";
 import TransferHistory from "../screens/MyWallets/TransferHistory";
 import ExpenseHistory from "../screens/MyWallets/ExpenseHistory";
 import CategoryManagement from "../screens/Categories/CategoryManagement";
+import EditCategory from "../screens/Categories/EditCategory";
+import DeleteCategory from "../screens/Categories/DeleteCategory";
 import SpendingGroupManagement from "../screens/SpendingGroups/SpendingGroupManagement";
+import EditSpendingGroup from "../screens/SpendingGroups/EditSpendingGroup";
+import DeleteSpendingGroup from "../screens/SpendingGroups/DeleteSpendingGroup";
 
 // Modal screens
 import AddWalletModal from "../screens/MyWallets/AddWalletModal";
@@ -103,10 +107,14 @@ export default function AppNavigator() {
       <Stack.Screen name="TransferHistory" component={TransferHistory} />
       <Stack.Screen name="ExpenseHistory" component={ExpenseHistory} />
       <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
+      <Stack.Screen name="EditCategory" component={EditCategory} />
+      <Stack.Screen name="DeleteCategory" component={DeleteCategory} />
       <Stack.Screen
         name="SpendingGroupManagement"
         component={SpendingGroupManagement}
       />
+      <Stack.Screen name="EditSpendingGroup" component={EditSpendingGroup} />
+      <Stack.Screen name="DeleteSpendingGroup" component={DeleteSpendingGroup} />
 
       <Stack.Screen
         name="CreateTransaction"
