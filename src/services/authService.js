@@ -2,9 +2,10 @@ import { fetchAPI } from "./api";
 
 export const authService = {
   login: (credentials) =>
-    fetchAPI("/login", { method: "POST", body: JSON.stringify(credentials) }),
-  logout: () => fetchAPI("/logout", { method: "POST" }),
+    fetchAPI("/auth/login", { method: "POST", body: credentials }),
   register: (userData) =>
-    fetchAPI("/register", { method: "POST", body: JSON.stringify(userData) }),
-  getMe: () => fetchAPI("/me"),
+    fetchAPI("/auth/signup", { method: "POST", body: userData }),
+  getProfile: (token) => fetchAPI("/profile", { token }),
+  updateProfile: (token, profileData) =>
+    fetchAPI("/profile", { method: "PATCH", token, body: profileData }),
 };

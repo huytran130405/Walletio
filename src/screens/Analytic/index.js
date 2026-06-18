@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAnalyticsOverview, fetchAnalyticsSummary } from "../../store/slices/analyticSlice";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
@@ -41,6 +42,8 @@ const formatAxisMoney = (amount) => {
 
 const getMonthLabel = (date) => `Tháng ${date.getMonth() + 1} ${date.getFullYear()}`;
 const getMonthShortLabel = (date) => `T${date.getMonth() + 1}`;
+const getMonthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+const toApiDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 const sameMonth = (date, monthDate) =>
   date && date.getMonth() === monthDate.getMonth() && date.getFullYear() === monthDate.getFullYear();
@@ -217,13 +220,38 @@ function ComparisonBars({ months, chartWidth }) {
 }
 
 export default function Analytic() {
+  const dispatch = useDispatch();
   const [metric, setMetric] = useState("expense");
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
   const transactions = useSelector((state) => state.transactions.transactions);
+  const analytics = useSelector((state) => state.analytics);
   const { width } = useWindowDimensions();
   const pageWidth = Math.min(width, 430);
   const chartWidth = Math.max(240, pageWidth - spacing.md * 2 - spacing.base * 2);
   const donutSize = Math.min(280, chartWidth);
+  const selectedYear = selectedMonth.getFullYear();
+  const monthStart = useMemo(
+    () => new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1),
+    [selectedMonth],
+  );
+  const nextMonthStart = useMemo(
+    () => new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1),
+    [selectedMonth],
+  );
+
+  useEffect(() => {
+    dispatch(fetchAnalyticsSummary(selectedYear));
+  }, [dispatch, selectedYear]);
+
+  useEffect(() => {
+    dispatch(
+      fetchAnalyticsOverview({
+        direction: metric === "expense" ? "out" : "in",
+        from: toApiDate(monthStart),
+        to: toApiDate(nextMonthStart),
+      }),
+    );
+  }, [dispatch, metric, monthStart, nextMonthStart]);
 
   const monthTransactions = useMemo(
     () => transactions.filter((tx) => sameMonth(parseTxDate(tx.date), selectedMonth)),
@@ -234,16 +262,29 @@ export default function Analytic() {
   const incomeTransactions = monthTransactions.filter((tx) => tx.type === "income");
   const expenseRows = buildCategoryRows(expenseTransactions, CHART_COLORS);
   const incomeRows = buildCategoryRows(incomeTransactions, INCOME_COLORS);
-  const activeRows = metric === "expense" ? expenseRows : incomeRows;
+  const apiOverviewMatches =
+    analytics.overview?.direction === (metric === "expense" ? "out" : "in") &&
+    analytics.overview?.from === toApiDate(monthStart) &&
+    analytics.overview?.to === toApiDate(nextMonthStart);
+  const apiRows = apiOverviewMatches
+    ? analytics.overview.categories.map((row, index) => ({
+        ...row,
+        color: (metric === "expense" ? CHART_COLORS : INCOME_COLORS)[index % (metric === "expense" ? CHART_COLORS.length : INCOME_COLORS.length)],
+      }))
+    : [];
+  const activeRows = apiRows.length > 0 ? apiRows : metric === "expense" ? expenseRows : incomeRows;
   const activeTotal = activeRows.reduce((sum, row) => sum + row.amount, 0);
 
   const lastThreeMonths = useMemo(() => getLastMonths(selectedMonth, 3), [selectedMonth]);
+  const summaryMonths = analytics.summaries?.[selectedYear] ?? [];
+  const summaryByMonth = new Map(summaryMonths.map((item) => [item.month, item]));
   const comparisonMonths = lastThreeMonths.map((monthDate) => {
+    const apiMonth = summaryByMonth.get(getMonthKey(monthDate));
     const monthTxs = transactions.filter((tx) => sameMonth(parseTxDate(tx.date), monthDate));
     return {
       label: getMonthShortLabel(monthDate),
-      income: monthTxs.filter((tx) => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0),
-      expense: monthTxs.filter((tx) => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0),
+      income: apiMonth?.income ?? monthTxs.filter((tx) => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0),
+      expense: apiMonth?.expense ?? monthTxs.filter((tx) => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0),
     };
   });
   const averageIncome = comparisonMonths.reduce((sum, item) => sum + item.income, 0) / comparisonMonths.length;

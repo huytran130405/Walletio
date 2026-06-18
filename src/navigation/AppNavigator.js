@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import TabNavigator from "./TabNavigator";
+import { fetchAnalyticsBalance, fetchAnalyticsSummary } from "../store/slices/analyticSlice";
+import { fetchBudgets } from "../store/slices/budgetSlice";
+import { fetchTransactions } from "../store/slices/transactionSlice";
+import { fetchTransfers } from "../store/slices/transferSlice";
+import { fetchWallets, fetchWalletSummary } from "../store/slices/walletSlice";
 
 // Auth screens
 import Login from "../screens/Auth/Login";
@@ -29,7 +34,19 @@ import CreateTransaction from "../screens/CreateTransaction";
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
+  const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
+
+  useEffect(() => {
+    if (!user) return;
+    dispatch(fetchWallets());
+    dispatch(fetchWalletSummary());
+    dispatch(fetchTransactions());
+    dispatch(fetchTransfers());
+    dispatch(fetchBudgets());
+    dispatch(fetchAnalyticsSummary(new Date().getFullYear()));
+    dispatch(fetchAnalyticsBalance());
+  }, [dispatch, user]);
 
   if (!user) {
     return (

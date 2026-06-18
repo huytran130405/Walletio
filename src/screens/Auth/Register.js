@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useDispatch } from "react-redux";
-import { registerLocal } from "../../store/slices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser } from "../../store/slices/authSlice";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
@@ -21,11 +21,12 @@ import GoogleAuthButton from "./components/GoogleAuthButton";
 
 export default function Register({ navigation }) {
   const dispatch = useDispatch();
+  const { status } = useSelector((state) => state.auth);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
       Alert.alert("Thiếu thông tin", "Vui lòng nhập đủ tên, email và mật khẩu.");
       return;
@@ -34,11 +35,17 @@ export default function Register({ navigation }) {
       Alert.alert("Mật khẩu ngắn", "Mật khẩu cần ít nhất 6 ký tự.");
       return;
     }
-    dispatch(registerLocal({ name: name.trim(), email: email.trim() }));
+    try {
+      await dispatch(
+        registerUser({ name: name.trim(), email: email.trim(), password }),
+      ).unwrap();
+    } catch (error) {
+      Alert.alert("Tạo tài khoản", error || "Vui lòng thử lại.");
+    }
   };
 
   const handleGoogleRegister = () => {
-    dispatch(registerLocal({ name: "Google User", email: "google.user@walletio.app" }));
+    Alert.alert("Chưa hỗ trợ", "Backend hiện chưa có API đăng nhập Google.");
   };
 
   return (
@@ -53,7 +60,7 @@ export default function Register({ navigation }) {
 
         <View style={styles.heading}>
           <Text style={styles.title}>Tạo tài khoản</Text>
-          <Text style={styles.subtitle}>Bắt đầu với dữ liệu mẫu trong app, backend sẽ nối sau.</Text>
+          <Text style={styles.subtitle}>Tạo tài khoản để đồng bộ dữ liệu với backend.</Text>
         </View>
 
         <View style={styles.form}>
@@ -96,9 +103,15 @@ export default function Register({ navigation }) {
             />
           </View>
 
-          <TouchableOpacity style={styles.primaryBtn} onPress={handleRegister}>
+          <TouchableOpacity
+            style={[styles.primaryBtn, status === "pending" && { opacity: 0.65 }]}
+            onPress={handleRegister}
+            disabled={status === "pending"}
+          >
             <LinearGradient colors={gradients.forest} style={styles.primaryGradient}>
-              <Text style={styles.primaryText}>Tạo tài khoản</Text>
+              <Text style={styles.primaryText}>
+                {status === "pending" ? "Đang tạo..." : "Tạo tài khoản"}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
 

@@ -53,6 +53,7 @@ export default function ExpenseHistory({ navigation }) {
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const selectedWallet = wallets.find((wallet) => wallet.id === walletId);
     return expenses
       .filter((expense) => {
         if (query) {
@@ -62,7 +63,11 @@ export default function ExpenseHistory({ navigation }) {
         if (monthKey !== "all" && getExpenseMonthKey(expense) !== monthKey) {
           return false;
         }
-        if (walletId !== "all" && expense.walletId !== walletId) {
+        if (
+          walletId !== "all" &&
+          expense.walletId !== walletId &&
+          expense.walletName !== selectedWallet?.name
+        ) {
           return false;
         }
         return true;
@@ -72,7 +77,7 @@ export default function ExpenseHistory({ navigation }) {
         const bTime = parseExpenseDate(b.expense_date).getTime();
         return sortOrder === "desc" ? bTime - aTime : aTime - bTime;
       });
-  }, [expenses, monthKey, search, sortOrder, walletId]);
+  }, [expenses, monthKey, search, sortOrder, walletId, wallets]);
 
   const monthFilterOptions = useMemo(
     () => [

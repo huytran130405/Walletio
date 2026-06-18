@@ -84,7 +84,17 @@ export default function Transactions({ navigation }) {
       `Bạn có chắc muốn xoá "${tx.description}"?`,
       [
         { text: "Huỷ", style: "cancel" },
-        { text: "Xoá", style: "destructive", onPress: () => dispatch(deleteTransaction(tx.id)) },
+        {
+          text: "Xoá",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await dispatch(deleteTransaction(tx.id)).unwrap();
+            } catch (error) {
+              Alert.alert("Chưa hỗ trợ", error || "Backend chưa có API xoá giao dịch.");
+            }
+          },
+        },
       ]
     );
   };

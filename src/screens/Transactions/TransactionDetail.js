@@ -55,10 +55,18 @@ export default function TransactionDetail({ navigation, route }) {
         {
           text: "Xoá",
           style: "destructive",
-          onPress: () => {
-            dispatch(deleteTransaction(transaction.id));
-            setToast({ visible: true, message: "Đã xoá giao dịch!", type: "success" });
-            setTimeout(() => navigation.goBack(), 1200);
+          onPress: async () => {
+            try {
+              await dispatch(deleteTransaction(transaction.id)).unwrap();
+              setToast({ visible: true, message: "Đã xoá giao dịch!", type: "success" });
+              setTimeout(() => navigation.goBack(), 1200);
+            } catch (error) {
+              setToast({
+                visible: true,
+                message: error || "Backend chưa có API xoá giao dịch.",
+                type: "error",
+              });
+            }
           },
         },
       ]

@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectMonthlyBudget,
-  setMonthlyBudgetLocal,
+  updateBudget,
 } from "../../store/slices/budgetSlice";
 import { addCategory } from "../../store/slices/categorySlice";
 import { addSpendingGroup } from "../../store/slices/spendingGroupSlice";
@@ -88,18 +88,34 @@ export default function BudgetStructureEditor({ navigation, route }) {
     type: "success",
   });
 
-  const saveMonthlyBudget = () => {
+  const saveMonthlyBudget = async () => {
     const amount = Number(monthlyAmount);
     if (!amount || amount <= 0) {
       Alert.alert("Thiếu ngân sách tháng", "Vui lòng nhập số tiền budget hợp lệ.");
       return;
     }
-    dispatch(setMonthlyBudgetLocal({ month, year, amount }));
-    setToast({
-      visible: true,
-      message: `Đã lưu budget tháng ${month}/${year}.`,
-      type: "success",
-    });
+    if (!monthlyBudget.id) {
+      Alert.alert("Chưa có budget", "Backend chưa có API tạo budget tháng mới từ mobile.");
+      return;
+    }
+    try {
+      await dispatch(
+        updateBudget({
+          id: monthlyBudget.id,
+          name: monthlyBudget.name ?? `Budget ${month}/${year}`,
+          month,
+          year,
+          amount,
+        }),
+      ).unwrap();
+      setToast({
+        visible: true,
+        message: `Đã lưu budget tháng ${month}/${year}.`,
+        type: "success",
+      });
+    } catch (error) {
+      Alert.alert("Không lưu được budget", error || "Vui lòng thử lại.");
+    }
   };
 
   const createGroup = () => {

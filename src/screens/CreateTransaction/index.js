@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
-import { createTransactionLocal, updateTransactionLocal } from "../../store/slices/transactionSlice";
+import { createTransaction, updateTransaction } from "../../store/slices/transactionSlice";
+import { fetchWallets, fetchWalletSummary } from "../../store/slices/walletSlice";
 import BottomSheet from "../../components/common/BottomSheet";
 import CategoryPicker from "../../components/common/CategoryPicker";
 import WalletCard from "../../components/common/WalletCard";
@@ -173,6 +174,7 @@ export default function CreateTransaction({ navigation, route }) {
   const [amount, setAmount] = useState(String(Math.abs(editData?.amount ?? 0)));
   const [note, setNote] = useState(editData?.note ?? "");
   const [category, setCategory] = useState(editData?.category ?? null);
+  const [categoryId, setCategoryId] = useState(editData?.categoryId ?? "");
   const [walletId, setWalletId] = useState(
     route?.params?.walletId ?? editData?.walletId ?? wallets[0]?.id ?? ""
   );
@@ -192,6 +194,7 @@ export default function CreateTransaction({ navigation, route }) {
       setAmount(String(Math.abs(editData.amount ?? 0)));
       setNote(editData.note ?? "");
       setCategory(editData.category ?? null);
+      setCategoryId(editData.categoryId ?? "");
       setWalletId(editData.walletId ?? wallets[0]?.id ?? "");
     } else if (route?.params?.walletId) {
       setWalletId(route.params.walletId);
@@ -199,10 +202,11 @@ export default function CreateTransaction({ navigation, route }) {
   }, [route?.params?.initialType, route?.params?.walletId, editData?.id]);
 
   const selectedWallet = wallets.find((w) => w.id === walletId) ?? wallets[0];
-  const selectedCategory = categories.find((c) => c.name === category);
+  const selectedCategory = categories.find((c) => c.id === categoryId || c.name === category);
   const dateLabel = fmtDate(date);
   const dateLabelFull = fmtDateFull(date);
 
+  const isSaving = status === "pending";
   const isExpense = type === "expense";
   const amountColor = isExpense ? colors.expense : colors.income;
   const amountPrefix = isExpense ? "−đ" : "+đ";
@@ -218,7 +222,9 @@ export default function CreateTransaction({ navigation, route }) {
     setAmount((p) => (p === "0" ? key : (p + key).length > 12 ? p : p + key));
   };
 
-  const doSave = (andContinue = false) => {
+  const doSave = async (andContinue = false) => {
+    if (isSaving) return;
+
     if (Number(amount) === 0) {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền.");
       return;
@@ -228,25 +234,34 @@ export default function CreateTransaction({ navigation, route }) {
       amount: Number(amount),
       direction: type === "income" ? "in" : "out",
       note,
+      categoryId: selectedCategory?.id ?? categoryId,
       category: category ?? "",
       walletId: selectedWallet?.id,
       date: dateLabelFull,
       expense_date: dateLabelFull,
       description: note || category || "Giao dịch",
     };
-    if (editData) {
-      dispatch(updateTransactionLocal({ id: editData.id, ...payload }));
-    } else {
-      dispatch(createTransactionLocal(payload));
-    }
-    if (andContinue) {
-      setAmount("0");
-      setNote("");
-      setCategory(null);
-      showToast("Đã lưu! Tiếp tục thêm...");
-    } else {
-      showToast(editData ? "Đã cập nhật!" : "Đã lưu giao dịch!");
-      setTimeout(() => navigation.goBack(), 900);
+
+    try {
+      if (editData) {
+        await dispatch(updateTransaction({ id: editData.id, ...payload })).unwrap();
+      } else {
+        await dispatch(createTransaction(payload)).unwrap();
+      }
+      dispatch(fetchWallets());
+      dispatch(fetchWalletSummary());
+      if (andContinue) {
+        setAmount("0");
+        setNote("");
+        setCategory(null);
+        setCategoryId("");
+        showToast("Đã lưu! Tiếp tục thêm...");
+      } else {
+        showToast(editData ? "Đã cập nhật!" : "Đã lưu giao dịch!");
+        setTimeout(() => navigation.goBack(), 900);
+      }
+    } catch (error) {
+      Alert.alert("Không lưu được giao dịch", error || "Vui lòng thử lại.");
     }
   };
 
@@ -274,7 +289,11 @@ export default function CreateTransaction({ navigation, route }) {
         <View style={styles.togglePill}>
           <TouchableOpacity
             style={[styles.toggleOption, type === "expense" && styles.toggleActive]}
-            onPress={() => { setType("expense"); setCategory(null); }}
+            onPress={() => {
+              setType("expense");
+              setCategory(null);
+              setCategoryId("");
+            }}
             activeOpacity={0.8}
           >
             <Text style={styles.toggleArrow}>↗</Text>
@@ -284,7 +303,11 @@ export default function CreateTransaction({ navigation, route }) {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleOption, type === "income" && styles.toggleActive]}
-            onPress={() => { setType("income"); setCategory(null); }}
+            onPress={() => {
+              setType("income");
+              setCategory(null);
+              setCategoryId("");
+            }}
             activeOpacity={0.8}
           >
             <Text style={styles.toggleArrow}>↙</Text>
@@ -405,16 +428,18 @@ export default function CreateTransaction({ navigation, route }) {
           {/* Right col: action buttons */}
           <View style={styles.numpadRight}>
             <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnBlue]}
+              style={[styles.actionBtn, styles.actionBtnBlue, isSaving && styles.actionBtnDisabled]}
               onPress={() => doSave(true)}
+              disabled={isSaving}
               activeOpacity={0.8}
             >
               <Ionicons name="add" size={22} color="#fff" />
               <Text style={styles.actionBtnText}>Lưu &{"\n"}tiếp tục</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnGreen]}
+              style={[styles.actionBtn, styles.actionBtnGreen, isSaving && styles.actionBtnDisabled]}
               onPress={() => doSave(false)}
+              disabled={isSaving}
               activeOpacity={0.8}
             >
               <Ionicons name="checkmark" size={22} color="#fff" />
@@ -427,10 +452,11 @@ export default function CreateTransaction({ navigation, route }) {
       {/* ── Bottom Sheets ── */}
       <BottomSheet visible={showCatPicker} onClose={() => setShowCatPicker(false)} title="Chọn danh mục" snapHeight={520}>
         <CategoryPicker
-          selected={category}
+          selected={categoryId || category}
           type={type}
-          onSelect={(name) => {
-            setCategory(name);
+          onSelect={(selected) => {
+            setCategory(selected.name);
+            setCategoryId(selected.id);
             setShowCatPicker(false);
           }}
         />
@@ -664,6 +690,9 @@ const styles = StyleSheet.create({
   },
   actionBtnGreen: {
     backgroundColor: colors.success,
+  },
+  actionBtnDisabled: {
+    opacity: 0.6,
   },
   actionBtnText: {
     fontSize: typography.fontSize.xs,
