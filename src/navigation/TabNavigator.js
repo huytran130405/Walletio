@@ -13,9 +13,9 @@ import { typography } from "../theme/typography";
 
 // Screens
 import BudgetPlanning from "../screens/BudgetPlanning";
-import CreateTransaction from "../screens/CreateTransaction";
 import Analytic from "../screens/Analytic";
 import AccountSettings from "../screens/AccountSettings";
+import MyWallets from "../screens/MyWallets";
 
 const Tab = createBottomTabNavigator();
 
@@ -26,9 +26,6 @@ const TAB_CONFIG = [
   { name: "Analytic", label: "Analytic", emoji: "📈" },
   { name: "AccountSettings", label: "Cá nhân", emoji: "👤" },
 ];
-
-// We import MyWallets for the Ví tiền tab
-import MyWallets from "../screens/MyWallets";
 
 function CustomTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
@@ -41,6 +38,10 @@ function CustomTabBar({ state, descriptors, navigation }) {
         const cfg = TAB_CONFIG[index];
 
         const onPress = () => {
+          if (cfg?.isFAB) {
+            navigation.getParent()?.navigate("CreateTransaction");
+            return;
+          }
           const event = navigation.emit({
             type: "tabPress",
             target: route.key,
@@ -92,7 +93,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen name="BudgetPlanning" component={BudgetPlanning} />
       <Tab.Screen name="MyWallets" component={MyWallets} />
-      <Tab.Screen name="CreateTransaction" component={CreateTransaction} />
+      <Tab.Screen name="CreateTransaction" component={() => <View />} />
       <Tab.Screen name="Analytic" component={Analytic} />
       <Tab.Screen name="AccountSettings" component={AccountSettings} />
     </Tab.Navigator>

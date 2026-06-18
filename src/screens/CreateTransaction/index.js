@@ -9,36 +9,162 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useDispatch, useSelector } from "react-redux";
 import { createTransactionLocal, updateTransactionLocal } from "../../store/slices/transactionSlice";
 import BottomSheet from "../../components/common/BottomSheet";
 import CategoryPicker from "../../components/common/CategoryPicker";
 import WalletCard from "../../components/common/WalletCard";
 import Toast from "../../components/common/Toast";
-import { colors, gradients, shadows } from "../../theme/colors";
+import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
 
-const PAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "⌫"];
-const TYPES = [
-  { key: "expense", label: "Chi phí", color: colors.expense },
-  { key: "income", label: "Thu nhập", color: colors.income },
-];
-
 const fmtDate = (d) => {
+  const day = d.getDate().toString().padStart(2, "0");
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+  return `${day}/${month}`;
+};
+
+const fmtDateFull = (d) => {
   const day = d.getDate().toString().padStart(2, "0");
   const month = (d.getMonth() + 1).toString().padStart(2, "0");
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 };
 
+// Category icon mapping
+const CAT_ICONS = {
+  "Ăn uống": "🍔",
+  "Di chuyển": "🚗",
+  "Mua sắm": "🛍️",
+  "Sức khoẻ": "💊",
+  "Giải trí": "🎮",
+  "Nhà cửa": "🏠",
+  "Lương": "💰",
+  "Tiết kiệm": "🐷",
+  "Điện thoại": "📱",
+  "Nhà hàng": "🍽️",
+  "Cafe": "☕",
+};
+// Parse "dd/mm/yyyy" -> Date
+const parseDateStr = (str) => {
+  if (!str) return new Date();
+  const [d, m, y] = str.split("/").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+const VI_WEEKDAYS = ["TH 2", "TH 3", "TH 4", "TH 5", "TH 6", "TH 7", "CN"];
+
+/** Lịch chọn ngày inline */
+function CalendarPicker({ selected, calendarDate, onChangeMonth, onSelect }) {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth(); // 0-indexed
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Ngày 1 của tháng là thứ mấy (Monday-based)
+  const firstDay = new Date(year, month, 1);
+  const startDow = (firstDay.getDay() + 6) % 7; // 0=Mon
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const isSelected = (d) =>
+    d &&
+    selected.getDate() === d &&
+    selected.getMonth() === month &&
+    selected.getFullYear() === year;
+
+  const isToday = (d) =>
+    d &&
+    today.getDate() === d &&
+    today.getMonth() === month &&
+    today.getFullYear() === year;
+
+  const prevMonth = () => {
+    const d = new Date(year, month - 1, 1);
+    onChangeMonth(d);
+  };
+  const nextMonth = () => {
+    const d = new Date(year, month + 1, 1);
+    onChangeMonth(d);
+  };
+
+  return (
+    <View style={cal.wrap}>
+      {/* Month header */}
+      <View style={cal.header}>
+        <TouchableOpacity onPress={prevMonth} style={cal.navBtn}>
+          <Text style={cal.navIcon}>‹</Text>
+        </TouchableOpacity>
+        <Text style={cal.monthTitle}>
+          tháng {month + 1} năm {year}
+        </Text>
+        <TouchableOpacity onPress={nextMonth} style={cal.navBtn}>
+          <Text style={cal.navIcon}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Weekday headers */}
+      <View style={cal.weekRow}>
+        {VI_WEEKDAYS.map((wd) => (
+          <Text key={wd} style={cal.weekDay}>{wd}</Text>
+        ))}
+      </View>
+
+      {/* Days grid */}
+      <View style={cal.grid}>
+        {cells.map((d, i) => {
+          const sel = isSelected(d);
+          const tod = isToday(d);
+          return (
+            <TouchableOpacity
+              key={i}
+              style={cal.cell}
+              onPress={() => d && onSelect(new Date(year, month, d))}
+              activeOpacity={d ? 0.7 : 1}
+            >
+              {d ? (
+                <View style={[cal.dayCircle, sel && cal.daySelected, tod && !sel && cal.dayToday]}>
+                  <Text style={[cal.dayText, sel && cal.dayTextSelected, tod && !sel && cal.dayTextToday]}>
+                    {d}
+                  </Text>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const cal = StyleSheet.create({
+  wrap: { paddingTop: spacing.xs, paddingBottom: spacing.base },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
+  monthTitle: { fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold, color: colors.textPrimary },
+  navBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceAlt, justifyContent: "center", alignItems: "center" },
+  navIcon: { fontSize: 20, color: colors.accent, fontFamily: typography.family.medium, lineHeight: 24 },
+  weekRow: { flexDirection: "row", marginBottom: spacing.xs },
+  weekDay: { flex: 1, textAlign: "center", fontSize: typography.fontSize.xs, fontFamily: typography.family.medium, color: colors.textMuted },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  cell: { width: "14.28%", aspectRatio: 1, justifyContent: "center", alignItems: "center" },
+  dayCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: "center", alignItems: "center" },
+  daySelected: { backgroundColor: colors.accent },
+  dayToday: { borderWidth: 2, borderColor: colors.accent },
+  dayText: { fontSize: typography.fontSize.md, fontFamily: typography.family.medium, color: colors.textPrimary },
+  dayTextSelected: { color: colors.primaryDark, fontFamily: typography.family.bold },
+  dayTextToday: { color: colors.accent, fontFamily: typography.family.bold },
+});
+
 export default function CreateTransaction({ navigation, route }) {
   const dispatch = useDispatch();
   const { status } = useSelector((s) => s.transactions);
   const wallets = useSelector((s) => s.wallets.wallets);
-  const emotions = useSelector((s) => s.emotions.emotions);
+  const categories = useSelector((s) => s.categories.categories);
 
   const editData = route?.params?.editData;
   const initialType = route?.params?.initialType ?? "expense";
@@ -46,13 +172,17 @@ export default function CreateTransaction({ navigation, route }) {
   const [type, setType] = useState(editData?.type ?? initialType);
   const [amount, setAmount] = useState(String(Math.abs(editData?.amount ?? 0)));
   const [note, setNote] = useState(editData?.note ?? "");
-  const [category, setCategory] = useState(editData?.category ?? "");
-  const [walletId, setWalletId] = useState(route?.params?.walletId ?? editData?.walletId ?? wallets[0]?.id ?? "");
-  const [date] = useState(new Date());
-  const [emotionId, setEmotionId] = useState(editData?.emotionId ?? "");
+  const [category, setCategory] = useState(editData?.category ?? null);
+  const [walletId, setWalletId] = useState(
+    route?.params?.walletId ?? editData?.walletId ?? wallets[0]?.id ?? ""
+  );
+  const [date, setDate] = useState(
+    editData?.date ? parseDateStr(editData.date) : new Date()
+  );
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showWalletPick, setShowWalletPick] = useState(false);
-  const [showEmotionPicker, setShowEmotionPicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
   useEffect(() => {
@@ -61,18 +191,21 @@ export default function CreateTransaction({ navigation, route }) {
     if (editData) {
       setAmount(String(Math.abs(editData.amount ?? 0)));
       setNote(editData.note ?? "");
-      setCategory(editData.category ?? "");
+      setCategory(editData.category ?? null);
       setWalletId(editData.walletId ?? wallets[0]?.id ?? "");
-      setEmotionId(editData.emotionId ?? "");
     } else if (route?.params?.walletId) {
       setWalletId(route.params.walletId);
     }
   }, [route?.params?.initialType, route?.params?.walletId, editData?.id]);
 
   const selectedWallet = wallets.find((w) => w.id === walletId) ?? wallets[0];
-  const selectedEmotion = emotions.find((emotion) => emotion.id === emotionId);
-  const activeType = TYPES.find((t) => t.key === type);
-  const dateLabel = editData?.date ?? fmtDate(date);
+  const selectedCategory = categories.find((c) => c.name === category);
+  const dateLabel = fmtDate(date);
+  const dateLabelFull = fmtDateFull(date);
+
+  const isExpense = type === "expense";
+  const amountColor = isExpense ? colors.expense : colors.income;
+  const amountPrefix = isExpense ? "−đ" : "+đ";
 
   const showToast = (message, toastType = "success") =>
     setToast({ visible: true, message, type: toastType });
@@ -85,37 +218,41 @@ export default function CreateTransaction({ navigation, route }) {
     setAmount((p) => (p === "0" ? key : (p + key).length > 12 ? p : p + key));
   };
 
-  const handleSave = () => {
+  const doSave = (andContinue = false) => {
     if (Number(amount) === 0) {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền.");
       return;
     }
-    if (!category) {
-      Alert.alert("Lỗi", "Vui lòng chọn hạng mục.");
-      return;
-    }
-
     const payload = {
       type,
       amount: Number(amount),
       direction: type === "income" ? "in" : "out",
       note,
-      category,
+      category: category ?? "",
       walletId: selectedWallet?.id,
-      date: dateLabel,
-      expense_date: dateLabel,
-      description: note || category,
-      emotionId,
+      date: dateLabelFull,
+      expense_date: dateLabelFull,
+      description: note || category || "Giao dịch",
     };
-
     if (editData) {
       dispatch(updateTransactionLocal({ id: editData.id, ...payload }));
     } else {
       dispatch(createTransactionLocal(payload));
     }
+    if (andContinue) {
+      setAmount("0");
+      setNote("");
+      setCategory(null);
+      showToast("Đã lưu! Tiếp tục thêm...");
+    } else {
+      showToast(editData ? "Đã cập nhật!" : "Đã lưu giao dịch!");
+      setTimeout(() => navigation.goBack(), 900);
+    }
+  };
 
-    showToast(editData ? "Đã cập nhật giao dịch!" : "Đã lưu giao dịch!");
-    setTimeout(() => navigation.goBack(), 900);
+  const getCategoryEmoji = () => {
+    if (!selectedCategory) return "🥚";
+    return CAT_ICONS[selectedCategory.name] || "🟡";
   };
 
   return (
@@ -127,128 +264,168 @@ export default function CreateTransaction({ navigation, route }) {
         onHide={() => setToast((p) => ({ ...p, visible: false }))}
       />
 
-      <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
+      {/* ── Header ── */}
+      <View style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={20} color={colors.textPrimary} />
+          <Ionicons name="close" size={18} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>{editData ? "Sửa giao dịch" : "Thêm giao dịch"}</Text>
-        <View style={{ width: 42 }} />
-      </Animated.View>
 
-      <View style={styles.toggleRow}>
-        {TYPES.map((item) => (
+        {/* Toggle pill */}
+        <View style={styles.togglePill}>
           <TouchableOpacity
-            key={item.key}
-            style={[styles.toggleBtn, type === item.key && { backgroundColor: item.color }]}
-            onPress={() => {
-              setType(item.key);
-              setCategory("");
-            }}
+            style={[styles.toggleOption, type === "expense" && styles.toggleActive]}
+            onPress={() => { setType("expense"); setCategory(null); }}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.toggleText, type === item.key && styles.toggleTextActive]}>
-              {item.label}
+            <Text style={styles.toggleArrow}>↗</Text>
+            <Text style={[styles.toggleText, type === "expense" && styles.toggleTextActive]}>
+              Tiền ra
             </Text>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      <Animated.View entering={FadeInUp.duration(460).springify()} style={styles.amountBlock}>
-        <Text style={styles.amountLabel}>Số tiền</Text>
-        <Text style={[styles.amountValue, { color: activeType?.color ?? colors.textPrimary }]}>
-          {Number(amount).toLocaleString("vi-VN")} ₫
-        </Text>
-      </Animated.View>
-
-      <View style={styles.fields}>
-        <TouchableOpacity style={styles.fieldRow} onPress={() => setShowCatPicker(true)}>
-          <View style={styles.fieldIcon}>
-            <Ionicons name="pricetag-outline" size={18} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>Hạng mục</Text>
-            <Text style={[styles.fieldValue, !category && { color: colors.textSecondary }]}>
-              {category || "Chọn hạng mục"}
+          <TouchableOpacity
+            style={[styles.toggleOption, type === "income" && styles.toggleActive]}
+            onPress={() => { setType("income"); setCategory(null); }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.toggleArrow}>↙</Text>
+            <Text style={[styles.toggleText, type === "income" && styles.toggleTextActive]}>
+              Tiền vào
             </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
-        <View style={styles.divider} />
-
-        <TouchableOpacity style={styles.fieldRow} onPress={() => setShowWalletPick(true)}>
-          <View style={styles.fieldIcon}>
-            <Ionicons name="wallet-outline" size={18} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>Ví tiền</Text>
-            <Text style={styles.fieldValue}>{selectedWallet?.name ?? "Tiền mặt"}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
-        <View style={styles.divider} />
-
-        <View style={styles.fieldRow}>
-          <View style={styles.fieldIcon}>
-            <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>Ngày</Text>
-            <Text style={styles.fieldValue}>{dateLabel}</Text>
-          </View>
-        </View>
-        <View style={styles.divider} />
-
-        <TouchableOpacity style={styles.fieldRow} onPress={() => setShowEmotionPicker(true)}>
-          <View style={styles.fieldIcon}>
-            <Ionicons name={selectedEmotion?.icon || "heart-outline"} size={18} color={selectedEmotion?.color || colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>Cảm xúc</Text>
-            <Text style={[styles.fieldValue, !selectedEmotion && { color: colors.textSecondary }]}>
-              {selectedEmotion?.label || "Chọn cảm xúc"}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
-        <View style={styles.divider} />
-
-        <View style={styles.fieldRow}>
-          <View style={styles.fieldIcon}>
-            <Ionicons name="document-text-outline" size={18} color={colors.primary} />
-          </View>
-          <TextInput
-            style={styles.noteInput}
-            placeholder="Thêm ghi chú..."
-            placeholderTextColor={colors.textSecondary}
-            value={note}
-            onChangeText={setNote}
-          />
-        </View>
-      </View>
-
-      <View style={styles.numpad}>
-        {PAD_KEYS.map((key) => (
-          <TouchableOpacity key={key} style={styles.padKey} onPress={() => handlePad(key)} activeOpacity={0.6}>
-            <Text style={styles.padKeyText}>{key}</Text>
           </TouchableOpacity>
-        ))}
+        </View>
+
+        <View style={{ width: 40 }} />
       </View>
 
-      <TouchableOpacity
-        style={[styles.saveBtn, status === "pending" && { opacity: 0.6 }]}
-        onPress={handleSave}
-        disabled={status === "pending"}
-      >
-        <LinearGradient
-          colors={type === "income" ? gradients.forest : [colors.clay, colors.expense]}
-          style={styles.saveGradient}
+      {/* ── Center area ── */}
+      <View style={styles.centerArea}>
+        {/* Category icon */}
+        <TouchableOpacity
+          style={styles.catIconWrap}
+          onPress={() => setShowCatPicker(true)}
+          activeOpacity={0.8}
         >
-          <Text style={styles.saveBtnText}>
-            {status === "pending" ? "Đang lưu..." : editData ? "Lưu thay đổi" : "Lưu giao dịch"}
-          </Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <Text style={styles.catEmoji}>{getCategoryEmoji()}</Text>
+        </TouchableOpacity>
 
-      <BottomSheet visible={showCatPicker} onClose={() => setShowCatPicker(false)} title="Chọn hạng mục" snapHeight={480}>
+        {/* Amount */}
+        <Text style={[styles.amountDisplay, { color: amountColor }]}>
+          {amountPrefix}
+          {Number(amount).toLocaleString("vi-VN")}
+        </Text>
+
+        {/* Note input */}
+        <TextInput
+          style={styles.noteInput}
+          placeholder="Thêm mô tả..."
+          placeholderTextColor={colors.textMuted}
+          value={note}
+          onChangeText={setNote}
+          textAlign="center"
+        />
+      </View>
+
+      {/* ── Chips bar (wallet / category / date) ── */}
+      <View style={styles.chipsBar}>
+        <TouchableOpacity style={styles.chip} onPress={() => setShowWalletPick(true)}>
+          <Text style={styles.chipIcon}>🪙</Text>
+          <Text style={styles.chipText} numberOfLines={1}>
+            {selectedWallet?.name ?? "Ví tiền"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.chip} onPress={() => setShowCatPicker(true)}>
+          <Text style={styles.chipIcon}>🗂️</Text>
+          <Text style={[styles.chipText, !category && styles.chipPlaceholder]} numberOfLines={1}>
+            {category ?? (isExpense ? "Danh mục" : "Nhãn")}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.chip} onPress={() => { setCalendarDate(date); setShowDatePicker(true); }}>
+          <Text style={styles.chipIcon}>📅</Text>
+          <Text style={styles.chipText}>{dateLabel}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Numpad + Action buttons ── */}
+      <View style={styles.numpadArea}>
+        <View style={styles.numpadRow}>
+          {/* Left col: number grid */}
+          <View style={styles.numpadLeft}>
+            <View style={styles.padRow}>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("1")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>1</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("2")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>2</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("3")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>3</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKeyDark} onPress={() => handlePad("⌫")} activeOpacity={0.6}>
+                <Ionicons name="backspace-outline" size={20} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.padRow}>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("4")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>4</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("5")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>5</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("6")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>6</Text>
+              </TouchableOpacity>
+              <View style={styles.padKeyEmpty} />
+            </View>
+            <View style={styles.padRow}>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("7")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>7</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("8")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>8</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("9")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>9</Text>
+              </TouchableOpacity>
+              <View style={styles.padKeyEmpty} />
+            </View>
+            <View style={styles.padRow}>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("000")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>000</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.padKey} onPress={() => handlePad("0")} activeOpacity={0.6}>
+                <Text style={styles.padKeyText}>0</Text>
+              </TouchableOpacity>
+              <View style={styles.padKeyEmpty} />
+              <View style={styles.padKeyEmpty} />
+            </View>
+          </View>
+
+          {/* Right col: action buttons */}
+          <View style={styles.numpadRight}>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnBlue]}
+              onPress={() => doSave(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={22} color="#fff" />
+              <Text style={styles.actionBtnText}>Lưu &{"\n"}tiếp tục</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnGreen]}
+              onPress={() => doSave(false)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="checkmark" size={22} color="#fff" />
+              <Text style={styles.actionBtnText}>Lưu &{"\n"}đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Bottom Sheets ── */}
+      <BottomSheet visible={showCatPicker} onClose={() => setShowCatPicker(false)} title="Chọn danh mục" snapHeight={520}>
         <CategoryPicker
           selected={category}
           type={type}
@@ -281,62 +458,218 @@ export default function CreateTransaction({ navigation, route }) {
           ))}
         </View>
       </BottomSheet>
-
-      <BottomSheet visible={showEmotionPicker} onClose={() => setShowEmotionPicker(false)} title="Cảm xúc khi giao dịch" snapHeight={360}>
-        <View style={styles.emotionGrid}>
-          {emotions.map((emotion) => {
-            const active = emotion.id === emotionId;
-            return (
-              <TouchableOpacity
-                key={emotion.id}
-                style={[styles.emotionItem, active && styles.emotionItemActive]}
-                onPress={() => {
-                  setEmotionId(emotion.id);
-                  setShowEmotionPicker(false);
-                }}
-              >
-                <View style={[styles.emotionIcon, { backgroundColor: `${emotion.color}22` }]}>
-                  <Ionicons name={emotion.icon} size={22} color={emotion.color} />
-                </View>
-                <Text style={[styles.emotionLabel, active && styles.emotionLabelActive]}>{emotion.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+      <BottomSheet visible={showDatePicker} onClose={() => setShowDatePicker(false)} title="Chọn ngày" snapHeight={460}>
+        <CalendarPicker
+          selected={date}
+          calendarDate={calendarDate}
+          onChangeMonth={setCalendarDate}
+          onSelect={(d) => {
+            setDate(d);
+            setShowDatePicker(false);
+          }}
+        />
       </BottomSheet>
     </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  closeBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.border, ...shadows.soft },
-  title: { fontSize: typography.fontSize.lg, fontFamily: typography.family.bold, color: colors.textPrimary },
-  toggleRow: { flexDirection: "row", marginHorizontal: spacing.md, backgroundColor: colors.surfaceAlt, borderRadius: borderRadius.full, padding: spacing.xxs, marginBottom: spacing.lg },
-  toggleBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.full, alignItems: "center" },
-  toggleText: { fontSize: typography.fontSize.md, fontFamily: typography.family.medium, color: colors.textSecondary },
-  toggleTextActive: { color: "#fff" },
-  amountBlock: { alignItems: "center", paddingVertical: spacing.lg, marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xxl, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg, ...shadows.soft },
-  amountLabel: { fontSize: typography.fontSize.sm, color: colors.textSecondary, fontFamily: typography.family.medium },
-  amountValue: { fontSize: typography.fontSize.xxxl, fontFamily: typography.family.bold, color: colors.textPrimary, marginTop: spacing.xs },
-  fields: { marginHorizontal: spacing.md, backgroundColor: colors.surface, borderRadius: borderRadius.xl, paddingHorizontal: spacing.base, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
-  fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.base },
-  fieldIcon: { width: 34, height: 34, borderRadius: 13, backgroundColor: colors.surfaceAlt, justifyContent: "center", alignItems: "center", marginRight: spacing.sm },
-  fieldLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
-  fieldValue: { fontSize: typography.fontSize.md, fontFamily: typography.family.semiBold, color: colors.textPrimary, marginTop: 2 },
-  noteInput: { flex: 1, fontSize: typography.fontSize.md, color: colors.textPrimary, paddingVertical: 0 },
-  divider: { height: 1, backgroundColor: colors.divider, marginLeft: 46 },
-  numpad: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: spacing.md, marginBottom: spacing.base },
-  padKey: { width: "33.33%", paddingVertical: spacing.sm, alignItems: "center" },
-  padKeyText: { fontSize: typography.fontSize.xl, fontFamily: typography.family.medium, color: colors.textPrimary },
-  saveBtn: { marginHorizontal: spacing.md, marginBottom: spacing.lg, borderRadius: borderRadius.full, overflow: "hidden", ...shadows.lifted },
-  saveGradient: { paddingVertical: spacing.base, paddingHorizontal: spacing.md, alignItems: "center" },
-  saveBtnText: { color: "#fff", fontSize: typography.fontSize.base, fontFamily: typography.family.semiBold },
-  emotionGrid: { flexDirection: "row", flexWrap: "wrap", paddingVertical: spacing.sm },
-  emotionItem: { width: "33.33%", alignItems: "center", paddingVertical: spacing.base, borderRadius: borderRadius.lg },
-  emotionItemActive: { backgroundColor: colors.surfaceAlt },
-  emotionIcon: { width: 50, height: 50, borderRadius: borderRadius.lg, justifyContent: "center", alignItems: "center", marginBottom: spacing.xs },
-  emotionLabel: { fontSize: typography.fontSize.xs, color: colors.textSecondary, fontFamily: typography.family.medium },
-  emotionLabelActive: { color: colors.primary, fontFamily: typography.family.semiBold },
+  safe: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+
+  // ── Header ──────────────────────────────────────────────────
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.sm,
+  },
+  closeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceAlt,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  togglePill: {
+    flexDirection: "row",
+    backgroundColor: colors.surfaceTint,
+    borderRadius: borderRadius.full,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  toggleOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.full,
+    gap: 4,
+  },
+  toggleActive: {
+    backgroundColor: colors.accent,
+  },
+  toggleArrow: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  toggleText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+  },
+  toggleTextActive: {
+    color: colors.primaryDark,
+    fontFamily: typography.family.semiBold,
+  },
+
+  // ── Center area ──────────────────────────────────────────────
+  centerArea: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: spacing.md,
+  },
+  catIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.accentSoft,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.base,
+    ...shadows.soft,
+  },
+  catEmoji: {
+    fontSize: typography.fontSize.xxxl,
+  },
+  amountDisplay: {
+    fontSize: typography.fontSize.h1,
+    fontFamily: typography.family.bold,
+    letterSpacing: -1,
+    marginBottom: spacing.sm,
+  },
+  noteInput: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.family.regular,
+    color: colors.textSecondary,
+    paddingVertical: spacing.xxs,
+    minWidth: 160,
+    textAlign: "center",
+  },
+
+  // ── Chips bar ────────────────────────────────────────────────
+  chipsBar: {
+    flexDirection: "row",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+    backgroundColor: colors.accentSoft,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  chip: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipIcon: { fontSize: typography.fontSize.sm },
+  chipText: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textPrimary,
+    flexShrink: 1,
+  },
+  chipPlaceholder: {
+    color: colors.textMuted,
+  },
+
+  // ── Numpad ───────────────────────────────────────────────────
+  numpadArea: {
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  numpadRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "stretch",
+  },
+  numpadLeft: {
+    flex: 1,
+    gap: 8,
+  },
+  numpadRight: {
+    width: 82,
+    gap: 8,
+    justifyContent: "space-between",
+  },
+  padRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  padKey: {
+    flex: 1,
+    height: 52,
+    backgroundColor: colors.elevated,
+    borderRadius: borderRadius.sm,
+    justifyContent: "center",
+    alignItems: "center",
+    ...shadows.soft,
+  },
+  padKeyDark: {
+    flex: 1,
+    height: 52,
+    backgroundColor: colors.botanical,
+    borderRadius: borderRadius.sm,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  padKeyEmpty: {
+    flex: 1,
+    height: 52,
+  },
+  padKeyText: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.family.medium,
+    color: colors.textPrimary,
+  },
+
+  // Action buttons — chiếm toàn bộ chiều cao numpadRight (2 buttons = 2 rows each)
+  actionBtn: {
+    flex: 1,
+    borderRadius: borderRadius.md,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.xxs,
+    paddingVertical: spacing.xs,
+  },
+  actionBtnBlue: {
+    backgroundColor: colors.info,
+  },
+  actionBtnGreen: {
+    backgroundColor: colors.success,
+  },
+  actionBtnText: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textInverse,
+    textAlign: "center",
+    lineHeight: 14,
+  },
 });
