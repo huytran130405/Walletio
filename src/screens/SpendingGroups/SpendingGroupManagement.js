@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { addSpendingGroup, deleteSpendingGroup, updateSpendingGroup } from "../../store/slices/spendingGroupSlice";
+import CategoryIcon from "../../components/common/CategoryIcon";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
@@ -138,7 +139,7 @@ export default function SpendingGroupManagement({ navigation }) {
             onLongPress={() => handleDelete(group)}
           >
             <View style={[styles.rowIcon, { backgroundColor: `${group.color}22` }]}>
-              <Ionicons name={safeIonicon(group.icon, "albums-outline")} size={22} color={group.color || colors.primary} />
+              <CategoryIcon icon={group.icon} size={22} color={group.color || colors.primary} fallback="albums-outline" />
             </View>
             <View style={styles.rowInfo}>
               <Text style={styles.rowTitle}>{group.title}</Text>

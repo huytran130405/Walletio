@@ -19,6 +19,7 @@ import {
   upsertBudgetAllocation,
 } from "../../store/slices/budgetSlice";
 import Toast from "../../components/common/Toast";
+import CategoryIcon from "../../components/common/CategoryIcon";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
@@ -206,11 +207,7 @@ export default function AddBudgetModal({ navigation, route }) {
                     { backgroundColor: `${category.color}18` },
                   ]}
                 >
-                  <Ionicons
-                    name={safeIonicon(category.icon, "apps-outline")}
-                    size={17}
-                    color={category.color}
-                  />
+                  <CategoryIcon icon={category.icon} size={17} color={category.color} />
                 </View>
                 <Text
                   style={[

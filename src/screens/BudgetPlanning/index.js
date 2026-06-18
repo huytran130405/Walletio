@@ -13,10 +13,10 @@ import { useSelector } from "react-redux";
 import { selectBudgetSummary } from "../../store/slices/budgetSlice";
 import { selectExpenseByCategory } from "../../store/slices/transactionSlice";
 import BudgetHeroCard from "./components/BudgetHeroCard";
+import CategoryIcon from "../../components/common/CategoryIcon";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
-import { safeIonicon } from "../../utils/icons";
 
 const monthNames = [
   "Tháng 1",
@@ -217,11 +217,7 @@ export default function BudgetPlanning({ navigation }) {
       return (
         <View style={styles.groupHeader}>
           <View style={[styles.groupIcon, { backgroundColor: `${item.group.color}18` }]}>
-            <Ionicons
-              name={safeIonicon(item.group.icon, "albums-outline")}
-              size={18}
-              color={item.group.color}
-            />
+            <CategoryIcon icon={item.group.icon} size={18} color={item.group.color} fallback="albums-outline" />
           </View>
           <View style={styles.groupCopy}>
             <Text style={styles.groupTitle}>{item.group.title}</Text>
@@ -272,11 +268,7 @@ export default function BudgetPlanning({ navigation }) {
               { backgroundColor: `${item.category.color}18` },
             ]}
           >
-            <Ionicons
-              name={safeIonicon(item.category.icon, "apps-outline")}
-              size={18}
-              color={item.category.color}
-            />
+            <CategoryIcon icon={item.category.icon} size={18} color={item.category.color} />
           </View>
           <View style={styles.categoryCopy}>
             <Text style={styles.categoryName}>{item.category.name}</Text>

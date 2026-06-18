@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { addCategory, deleteCategory, updateCategory } from "../../store/slices/categorySlice";
+import CategoryIcon from "../../components/common/CategoryIcon";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
@@ -165,7 +166,7 @@ export default function CategoryManagement({ navigation }) {
             onLongPress={() => handleDelete(category)}
           >
             <View style={[styles.rowIcon, { backgroundColor: `${category.color}22` }]}>
-              <Ionicons name={safeIonicon(category.icon, "apps-outline")} size={22} color={category.color || colors.primary} />
+              <CategoryIcon icon={category.icon} size={22} color={category.color || colors.primary} />
             </View>
             <View style={styles.rowInfo}>
               <Text style={styles.rowTitle}>{category.name}</Text>

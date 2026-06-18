@@ -18,6 +18,7 @@ import {
 } from "../../store/slices/budgetSlice";
 import { addCategory } from "../../store/slices/categorySlice";
 import { addSpendingGroup } from "../../store/slices/spendingGroupSlice";
+import CategoryIcon from "../../components/common/CategoryIcon";
 import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
@@ -259,10 +260,11 @@ export default function BudgetStructureEditor({ navigation, route }) {
                   onPress={() => setSelectedGroupId(group.id)}
                   activeOpacity={0.78}
                 >
-                  <Ionicons
-                    name={safeIonicon(group.icon, "albums-outline")}
+                  <CategoryIcon
+                    icon={group.icon}
                     size={17}
                     color={active ? group.color : colors.textSecondary}
+                    fallback="albums-outline"
                   />
                   <Text
                     style={[
