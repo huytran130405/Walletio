@@ -25,8 +25,15 @@ export default function WalletDetail({ navigation, route }) {
   const transfers = useSelector((state) => state.transfers.transfers);
 
   const walletTransactions = useMemo(
-    () => transactions.filter((transaction) => transaction.walletId === walletId).slice(0, 5),
-    [transactions, walletId],
+    () =>
+      transactions
+        .filter(
+          (transaction) =>
+            transaction.walletId === walletId ||
+            (wallet?.name && transaction.walletName === wallet.name),
+        )
+        .slice(0, 5),
+    [transactions, wallet?.name, walletId],
   );
 
   const walletTransfers = useMemo(

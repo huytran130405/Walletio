@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { updateBudgetLocal } from "../../store/slices/budgetSlice";
+import { upsertBudgetAllocation } from "../../store/slices/budgetSlice";
 import Toast from "../../components/common/Toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors, gradients, shadows } from "../../theme/colors";
@@ -42,15 +42,31 @@ export default function EditBudgetModal({ navigation, route }) {
   const spentPct =
     budget?.limit > 0 ? Math.min(budget.spent / budget.limit, 1) : 0;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!Number(limit)) return;
-    dispatch(updateBudgetLocal({ id: budget.id, limit: Number(limit), color }));
-    setToast({
-      visible: true,
-      message: "Đã cập nhật ngân sách!",
-      type: "success",
-    });
-    setTimeout(() => navigation.goBack(), 1200);
+    if (!budget?.budgetId) {
+      setToast({
+        visible: true,
+        message: "Backend chưa có budget cho phân bổ này.",
+        type: "error",
+      });
+      return;
+    }
+    try {
+      await dispatch(upsertBudgetAllocation({ ...budget, limit: Number(limit), color })).unwrap();
+      setToast({
+        visible: true,
+        message: "Đã cập nhật ngân sách!",
+        type: "success",
+      });
+      setTimeout(() => navigation.goBack(), 1200);
+    } catch (error) {
+      setToast({
+        visible: true,
+        message: error || "Không cập nhật được ngân sách.",
+        type: "error",
+      });
+    }
   };
 
   return (

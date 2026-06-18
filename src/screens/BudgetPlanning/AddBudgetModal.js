@@ -13,9 +13,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  createBudgetLocal,
   selectBudgetSummary,
   selectMonthlyBudget,
+  upsertBudgetAllocation,
 } from "../../store/slices/budgetSlice";
 import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
@@ -95,7 +95,7 @@ export default function AddBudgetModal({ navigation, route }) {
     setColor(existingBudget?.color ?? category.color ?? COLORS[0]);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const amount = Number(limit);
     if (!selectedCategory) {
       Alert.alert("Thiếu danh mục", "Vui lòng chọn danh mục cần phân bổ.");
@@ -105,27 +105,36 @@ export default function AddBudgetModal({ navigation, route }) {
       Alert.alert("Thiếu số tiền", "Vui lòng nhập số tiền phân bổ hợp lệ.");
       return;
     }
+    if (!monthlyBudget.id) {
+      Alert.alert("Chưa có budget", "Backend chưa có budget tháng này để phân bổ.");
+      return;
+    }
 
-    dispatch(
-      createBudgetLocal({
-        month,
-        year,
-        categoryId: selectedCategory.id,
-        category: selectedCategory.name,
-        groupId: selectedCategory.groupId,
-        groupTitle: selectedGroup?.title ?? "Khác",
-        limit: amount,
-        period: "monthly",
-        color,
-      }),
-    );
-
-    setToast({
-      visible: true,
-      message: `Đã phân bổ ${money(amount)} cho ${selectedCategory.name}.`,
-      type: "success",
-    });
-    setTimeout(() => navigation.goBack(), 900);
+    try {
+      await dispatch(
+        upsertBudgetAllocation({
+          budgetId: monthlyBudget.id,
+          id: initialBudget?.id,
+          month,
+          year,
+          categoryId: selectedCategory.id,
+          category: selectedCategory.name,
+          groupId: selectedCategory.groupId,
+          groupTitle: selectedGroup?.title ?? "Khác",
+          limit: amount,
+          period: "monthly",
+          color,
+        }),
+      ).unwrap();
+      setToast({
+        visible: true,
+        message: `Đã phân bổ ${money(amount)} cho ${selectedCategory.name}.`,
+        type: "success",
+      });
+      setTimeout(() => navigation.goBack(), 900);
+    } catch (error) {
+      Alert.alert("Không lưu được phân bổ", error || "Vui lòng thử lại.");
+    }
   };
 
   return (

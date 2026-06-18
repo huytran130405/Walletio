@@ -10,8 +10,8 @@ import {
   TextInput,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { transferWalletsLocal } from "../../store/slices/walletSlice";
-import { addTransfer } from "../../store/slices/transferSlice";
+import { fetchWallets, fetchWalletSummary } from "../../store/slices/walletSlice";
+import { createTransfer } from "../../store/slices/transferSlice";
 import WalletCard from "../../components/common/WalletCard";
 import BottomSheet from "../../components/common/BottomSheet";
 import Toast from "../../components/common/Toast";
@@ -23,7 +23,7 @@ import { borderRadius, spacing } from "../../theme/spacing";
 export default function TransferMoneyModal({ navigation, route }) {
   const dispatch = useDispatch();
   const wallets = useSelector((s) => s.wallets.wallets);
-  const { status } = useSelector((s) => s.wallets);
+  const { status } = useSelector((s) => s.transfers);
 
   const [fromId, setFromId] = useState(route?.params?.fromId ?? wallets[0]?.id ?? "");
   const [toId, setToId] = useState(wallets[1]?.id ?? "");
@@ -50,14 +50,19 @@ export default function TransferMoneyModal({ navigation, route }) {
       Alert.alert("Lỗi", "Ví nguồn và ví đích không được trùng.");
       return;
     }
+    if (!fromWallet || !toWallet) {
+      Alert.alert("Lỗi", "Vui lòng chọn đủ ví nguồn và ví đích.");
+      return;
+    }
     if (fromWallet.balance < amt) {
       Alert.alert("Lỗi", "Số dư ví nguồn không đủ.");
       return;
     }
 
     try {
-      dispatch(transferWalletsLocal({ fromId, toId, amount: amt }));
-      dispatch(addTransfer({ fromId, toId, amount: amt, note: note.trim() }));
+      await dispatch(createTransfer({ fromId, toId, amount: amt, note: note.trim() })).unwrap();
+      dispatch(fetchWallets());
+      dispatch(fetchWalletSummary());
       setToast({
         visible: true,
         message: `Chuyển thành công ${amt.toLocaleString("vi-VN")}₫`,
@@ -67,7 +72,7 @@ export default function TransferMoneyModal({ navigation, route }) {
     } catch (e) {
       setToast({
         visible: true,
-        message: e.message ?? "Chuyển tiền thất bại",
+        message: e?.message ?? e ?? "Chuyển tiền thất bại",
         type: "error",
       });
     }

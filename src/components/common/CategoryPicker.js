@@ -10,7 +10,7 @@ import { borderRadius, spacing } from "../../theme/spacing";
  * CategoryPicker – grid chọn hạng mục từ Redux local state.
  * Props:
  *   selected : string
- *   onSelect : (name) => void
+ *   onSelect : (category) => void
  *   type     : "income" | "expense" | undefined
  */
 export default function CategoryPicker({ selected, onSelect, type }) {
@@ -22,12 +22,12 @@ export default function CategoryPicker({ selected, onSelect, type }) {
   return (
     <View style={styles.grid}>
       {visibleCategories.map((cat) => {
-        const isSelected = selected === cat.name;
+        const isSelected = selected === cat.name || selected === cat.id;
         return (
           <TouchableOpacity
             key={cat.id}
             style={[styles.item, isSelected && styles.itemSelected]}
-            onPress={() => onSelect(cat.name)}
+            onPress={() => onSelect(cat)}
             activeOpacity={0.7}
           >
             <View style={[styles.iconWrap, { backgroundColor: `${cat.color}22` }]}>

@@ -1,7 +1,8 @@
 import { useSelector, useDispatch } from "react-redux";
 import {
-  createTransactionLocal,
-  deleteTransactionLocal,
+  createTransaction,
+  deleteTransaction,
+  fetchTransactions,
 } from "../store/slices/transactionSlice";
 
 /**
@@ -12,9 +13,9 @@ export const useTransaction = () => {
   const dispatch = useDispatch();
   const { transactions, status } = useSelector((state) => state.transactions);
 
-  const loadAll = () => Promise.resolve(transactions);
-  const add = (data) => dispatch(createTransactionLocal(data));
-  const remove = (id) => dispatch(deleteTransactionLocal(id));
+  const loadAll = () => dispatch(fetchTransactions());
+  const add = (data) => dispatch(createTransaction(data));
+  const remove = (id) => dispatch(deleteTransaction(id));
 
   return { transactions, status, loadAll, add, remove };
 };

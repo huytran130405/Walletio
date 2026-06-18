@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchTransactions, selectMonthlySummary, selectExpenseByCategory } from "../../store/slices/transactionSlice";
-import { fetchBudgets, selectTotalBudgetLimit }      from "../../store/slices/budgetSlice";
+import { fetchBudgets, selectMonthlyBudget, selectTotalBudgetLimit }      from "../../store/slices/budgetSlice";
 import CircularProgress from "../../components/common/CircularProgress";
 import CategoryRow      from "../../components/common/CategoryRow";
 import { colors, gradients, shadows } from "../../theme/colors";
@@ -26,8 +26,8 @@ export default function Dashboard({ navigation }) {
   // Redux selectors
   const summary    = useSelector((s) => selectMonthlySummary(s, month, year));
   const totalLimit = useSelector((s) => selectTotalBudgetLimit(s));
+  const monthlyBudget = useSelector((s) => selectMonthlyBudget(s, month, year));
   const catExpense = useSelector((s) => selectExpenseByCategory(s, month, year));
-  const state      = useSelector((s) => s);
 
   useEffect(() => {
     dispatch(fetchTransactions());
@@ -42,7 +42,7 @@ export default function Dashboard({ navigation }) {
     return "Chào buổi tối,";
   }, []);
 
-  const totalBudget = totalLimit;
+  const totalBudget = monthlyBudget.amount || totalLimit;
   const totalSpent  = summary.expense;
   const remaining   = totalBudget - totalSpent;
   const progress    = totalBudget > 0 ? totalSpent / totalBudget : 0;

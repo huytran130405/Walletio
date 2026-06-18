@@ -1,94 +1,79 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { API_BASE_URL } from "../../utils/constants";
+import { walletService } from "../../services/walletService";
+import { transferService } from "../../services/transferService";
 
-// ── Mock data khởi tạo (offline-first) ────────────────────────────────────────
-const MOCK_WALLETS = [
-  { id: "w1", name: "Tiền mặt",            balance: 2000000,  type: "cash",   color: "#22C55E", icon: "cash-outline", isDefault: true },
-  { id: "w2", name: "Tài khoản ngân hàng", balance: 10000000, type: "bank",   color: "#3B82F6", icon: "card-outline", isDefault: false },
-  { id: "w3", name: "Ví điện tử",          balance: 3500000,  type: "ewallet",color: "#A855F7", icon: "phone-portrait-outline", isDefault: false },
-];
-
-const initialState = {
-  wallets: MOCK_WALLETS,
-  status:  "",  // "pending" | "success" | "fail"
+const walletVisual = (wallet, index = 0) => {
+  const payment = wallet.type === "payment";
+  return {
+    icon: payment ? "card-outline" : "analytics-outline",
+    color: payment ? "#2F9E69" : "#4E93B6",
+    isDefault: index === 0,
+  };
 };
 
-// ─── Thunks ────────────────────────────────────────────────────────────────
+const normalizeWallet = (wallet = {}, index = 0) => ({
+  id: wallet.wallet_id ?? wallet.id,
+  userId: wallet.user_id,
+  name: wallet.name ?? "Ví",
+  type: wallet.type ?? "payment",
+  openingBalance: Number(wallet.opening_balance ?? 0),
+  balance: Number(wallet.balance ?? wallet.opening_balance ?? 0),
+  ...walletVisual(wallet, index),
+});
+
+const initialState = {
+  wallets: [],
+  summary: { total: 0, payment: 0, tracking: 0 },
+  status: "",
+  error: null,
+};
 
 export const fetchWallets = createAsyncThunk(
   "/wallet/fetchWallets",
-  async (_, { getState }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const data = await fetch(`${API_BASE_URL}/wallets`).then((res) => res.json());
-      return data;
-    } catch {
-      return getState().wallets.wallets;
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const data = await walletService.getAll(token);
+      return Array.isArray(data) ? data.map(normalizeWallet) : [];
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
-export const addWallet = createAsyncThunk(
-  "/wallet/addWallet",
-  async (walletData) => {
+export const fetchWalletSummary = createAsyncThunk(
+  "/wallet/fetchWalletSummary",
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const data = await fetch(`${API_BASE_URL}/wallets`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(walletData),
-      }).then((res) => res.json());
-      return data;
-    } catch {
-      return { ...walletData, id: "w" + Date.now() };
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      return await walletService.getSummary(token);
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  }
-);
-
-export const updateWallet = createAsyncThunk(
-  "/wallet/updateWallet",
-  async ({ id, ...data }) => {
-    try {
-      const result = await fetch(`${API_BASE_URL}/wallets/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }).then((res) => res.json());
-      return result;
-    } catch {
-      return { id, ...data };
-    }
-  }
-);
-
-export const deleteWallet = createAsyncThunk(
-  "/wallet/deleteWallet",
-  async (walletId) => {
-    try {
-      await fetch(`${API_BASE_URL}/wallets/${walletId}`, { method: "DELETE" });
-    } catch {}
-    return walletId;
-  }
+  },
 );
 
 export const transferBetweenWallets = createAsyncThunk(
   "/wallet/transfer",
-  async ({ fromId, toId, amount }, { getState }) => {
-    const wallets = getState().wallets.wallets;
-    const from = wallets.find((w) => w.id === fromId);
-    const to   = wallets.find((w) => w.id === toId);
-    if (!from || !to || from.balance < amount) throw new Error("Không đủ số dư");
+  async ({ fromId, toId, amount, note }, { getState, rejectWithValue }) => {
     try {
-      await fetch(`${API_BASE_URL}/wallets/transfer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fromId, toId, amount }),
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const data = await transferService.create(token, {
+        from_wallet_id: fromId,
+        to_wallet_id: toId,
+        amount,
+        transfer_date: new Date().toISOString(),
+        note: note || null,
       });
-    } catch {}
-    // Offline: cập nhật local state
-    return { fromId, toId, amount };
-  }
+      return data?.data ?? data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
 );
-
-// ─── Slice ─────────────────────────────────────────────────────────────────
 
 export const walletSlice = createSlice({
   name: "wallet",
@@ -96,9 +81,9 @@ export const walletSlice = createSlice({
   reducers: {
     addWalletLocal: (state, action) => {
       state.wallets.push({
-        id: "w" + Date.now(),
+        id: "local_wallet_" + Date.now(),
         balance: 0,
-        type: "cash",
+        type: "payment",
         color: "#2F7D5A",
         icon: "wallet-outline",
         isDefault: false,
@@ -115,7 +100,11 @@ export const walletSlice = createSlice({
           wallet.isDefault = wallet.id === id;
         });
       }
-      state.wallets[index] = { ...state.wallets[index], ...updates, isDefault: Boolean(isDefault) || state.wallets[index].isDefault };
+      state.wallets[index] = {
+        ...state.wallets[index],
+        ...updates,
+        isDefault: Boolean(isDefault) || state.wallets[index].isDefault,
+      };
       state.status = "success";
     },
     deleteWalletLocal: (state, action) => {
@@ -131,64 +120,60 @@ export const walletSlice = createSlice({
       const to = state.wallets.find((wallet) => wallet.id === toId);
       if (from) from.balance -= amount;
       if (to) to.balance += amount;
+      state.summary.total = state.wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
       state.status = "success";
     },
   },
   extraReducers: (builder) => {
     builder
-      // fetchWallets
-      .addCase(fetchWallets.pending,   (state) => { state.status = "pending"; })
+      .addCase(fetchWallets.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
       .addCase(fetchWallets.fulfilled, (state, action) => {
-        if (action.payload && action.payload.length > 0) state.wallets = action.payload;
+        state.wallets = action.payload;
+        state.summary = action.payload.reduce(
+          (summary, wallet) => {
+            summary.total += wallet.balance;
+            if (wallet.type === "tracking") summary.tracking += wallet.balance;
+            else summary.payment += wallet.balance;
+            return summary;
+          },
+          { total: 0, payment: 0, tracking: 0 },
+        );
         state.status = "success";
       })
-      .addCase(fetchWallets.rejected,  (state) => { state.status = "fail"; })
+      .addCase(fetchWallets.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
 
-      // addWallet
-      .addCase(addWallet.pending,   (state) => { state.status = "pending"; })
-      .addCase(addWallet.fulfilled, (state, action) => {
-        state.wallets.push(action.payload);
+      .addCase(fetchWalletSummary.fulfilled, (state, action) => {
+        state.summary = {
+          total: Number(action.payload?.total ?? 0),
+          payment: Number(action.payload?.payment ?? 0),
+          tracking: Number(action.payload?.tracking ?? 0),
+        };
+      })
+
+      .addCase(transferBetweenWallets.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(transferBetweenWallets.fulfilled, (state) => {
         state.status = "success";
       })
-      .addCase(addWallet.rejected,  (state) => { state.status = "fail"; })
-
-      // updateWallet
-      .addCase(updateWallet.pending,   (state) => { state.status = "pending"; })
-      .addCase(updateWallet.fulfilled, (state, action) => {
-        const idx = state.wallets.findIndex((w) => w.id === action.payload.id);
-        if (idx !== -1) state.wallets[idx] = action.payload;
-        state.status = "success";
-      })
-      .addCase(updateWallet.rejected,  (state) => { state.status = "fail"; })
-
-      // deleteWallet
-      .addCase(deleteWallet.pending,   (state) => { state.status = "pending"; })
-      .addCase(deleteWallet.fulfilled, (state, action) => {
-        state.wallets = state.wallets.filter((w) => w.id !== action.payload);
-        state.status  = "success";
-      })
-      .addCase(deleteWallet.rejected,  (state) => { state.status = "fail"; })
-
-      // transferBetweenWallets
-      .addCase(transferBetweenWallets.pending,   (state) => { state.status = "pending"; })
-      .addCase(transferBetweenWallets.fulfilled, (state, action) => {
-        const { fromId, toId, amount } = action.payload;
-        const from = state.wallets.find((w) => w.id === fromId);
-        const to   = state.wallets.find((w) => w.id === toId);
-        if (from) from.balance -= amount;
-        if (to)   to.balance   += amount;
-        state.status = "success";
-      })
-      .addCase(transferBetweenWallets.rejected,  (state) => { state.status = "fail"; });
+      .addCase(transferBetweenWallets.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      });
   },
 });
 
-// ─── Selectors ─────────────────────────────────────────────────────────────
-
 export const selectTotalBalance = (state) =>
-  state.wallets.wallets.reduce((sum, w) => sum + w.balance, 0);
+  state.wallets.summary?.total ??
+  state.wallets.wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
 
-// ─── Reducer ───────────────────────────────────────────────────────────────
-
-export const { addWalletLocal, updateWalletLocal, deleteWalletLocal, transferWalletsLocal } = walletSlice.actions;
+export const { addWalletLocal, updateWalletLocal, deleteWalletLocal, transferWalletsLocal } =
+  walletSlice.actions;
 export const walletReducer = walletSlice.reducer;

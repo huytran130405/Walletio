@@ -12,7 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useDispatch, useSelector } from "react-redux";
-import { createTransactionLocal, updateTransactionLocal } from "../../store/slices/transactionSlice";
+import { createTransaction, updateTransaction } from "../../store/slices/transactionSlice";
+import { fetchWallets, fetchWalletSummary } from "../../store/slices/walletSlice";
 import BottomSheet from "../../components/common/BottomSheet";
 import CategoryPicker from "../../components/common/CategoryPicker";
 import WalletCard from "../../components/common/WalletCard";
@@ -38,6 +39,7 @@ export default function CreateTransaction({ navigation, route }) {
   const dispatch = useDispatch();
   const { status } = useSelector((s) => s.transactions);
   const wallets = useSelector((s) => s.wallets.wallets);
+  const categories = useSelector((s) => s.categories.categories);
   const emotions = useSelector((s) => s.emotions.emotions);
 
   const editData = route?.params?.editData;
@@ -47,6 +49,7 @@ export default function CreateTransaction({ navigation, route }) {
   const [amount, setAmount] = useState(String(Math.abs(editData?.amount ?? 0)));
   const [note, setNote] = useState(editData?.note ?? "");
   const [category, setCategory] = useState(editData?.category ?? "");
+  const [categoryId, setCategoryId] = useState(editData?.categoryId ?? "");
   const [walletId, setWalletId] = useState(route?.params?.walletId ?? editData?.walletId ?? wallets[0]?.id ?? "");
   const [date] = useState(new Date());
   const [emotionId, setEmotionId] = useState(editData?.emotionId ?? "");
@@ -62,6 +65,7 @@ export default function CreateTransaction({ navigation, route }) {
       setAmount(String(Math.abs(editData.amount ?? 0)));
       setNote(editData.note ?? "");
       setCategory(editData.category ?? "");
+      setCategoryId(editData.categoryId ?? "");
       setWalletId(editData.walletId ?? wallets[0]?.id ?? "");
       setEmotionId(editData.emotionId ?? "");
     } else if (route?.params?.walletId) {
@@ -70,6 +74,7 @@ export default function CreateTransaction({ navigation, route }) {
   }, [route?.params?.initialType, route?.params?.walletId, editData?.id]);
 
   const selectedWallet = wallets.find((w) => w.id === walletId) ?? wallets[0];
+  const selectedCategory = categories.find((item) => item.id === categoryId || item.name === category);
   const selectedEmotion = emotions.find((emotion) => emotion.id === emotionId);
   const activeType = TYPES.find((t) => t.key === type);
   const dateLabel = editData?.date ?? fmtDate(date);
@@ -85,7 +90,7 @@ export default function CreateTransaction({ navigation, route }) {
     setAmount((p) => (p === "0" ? key : (p + key).length > 12 ? p : p + key));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (Number(amount) === 0) {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền.");
       return;
@@ -100,6 +105,7 @@ export default function CreateTransaction({ navigation, route }) {
       amount: Number(amount),
       direction: type === "income" ? "in" : "out",
       note,
+      categoryId: selectedCategory?.id ?? categoryId,
       category,
       walletId: selectedWallet?.id,
       date: dateLabel,
@@ -108,14 +114,19 @@ export default function CreateTransaction({ navigation, route }) {
       emotionId,
     };
 
-    if (editData) {
-      dispatch(updateTransactionLocal({ id: editData.id, ...payload }));
-    } else {
-      dispatch(createTransactionLocal(payload));
+    try {
+      if (editData) {
+        await dispatch(updateTransaction({ id: editData.id, ...payload })).unwrap();
+      } else {
+        await dispatch(createTransaction(payload)).unwrap();
+      }
+      dispatch(fetchWallets());
+      dispatch(fetchWalletSummary());
+      showToast(editData ? "Đã cập nhật giao dịch!" : "Đã lưu giao dịch!");
+      setTimeout(() => navigation.goBack(), 900);
+    } catch (error) {
+      Alert.alert("Không lưu được giao dịch", error || "Vui lòng thử lại.");
     }
-
-    showToast(editData ? "Đã cập nhật giao dịch!" : "Đã lưu giao dịch!");
-    setTimeout(() => navigation.goBack(), 900);
   };
 
   return (
@@ -143,6 +154,7 @@ export default function CreateTransaction({ navigation, route }) {
             onPress={() => {
               setType(item.key);
               setCategory("");
+              setCategoryId("");
             }}
           >
             <Text style={[styles.toggleText, type === item.key && styles.toggleTextActive]}>
@@ -250,10 +262,11 @@ export default function CreateTransaction({ navigation, route }) {
 
       <BottomSheet visible={showCatPicker} onClose={() => setShowCatPicker(false)} title="Chọn hạng mục" snapHeight={480}>
         <CategoryPicker
-          selected={category}
+          selected={categoryId || category}
           type={type}
-          onSelect={(name) => {
-            setCategory(name);
+          onSelect={(selected) => {
+            setCategory(selected.name);
+            setCategoryId(selected.id);
             setShowCatPicker(false);
           }}
         />

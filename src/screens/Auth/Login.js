@@ -12,18 +12,19 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useDispatch } from "react-redux";
-import { loginLocal } from "../../store/slices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser } from "../../store/slices/authSlice";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
 
 export default function Login({ navigation }) {
   const dispatch = useDispatch();
-  const [email, setEmail] = useState("minhnhat@walletio.app");
-  const [password, setPassword] = useState("123456");
+  const { status } = useSelector((state) => state.auth);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Thiếu thông tin", "Vui lòng nhập email và mật khẩu.");
       return;
@@ -32,7 +33,11 @@ export default function Login({ navigation }) {
       Alert.alert("Mật khẩu ngắn", "Mật khẩu cần ít nhất 6 ký tự.");
       return;
     }
-    dispatch(loginLocal({ email: email.trim() }));
+    try {
+      await dispatch(loginUser({ email: email.trim(), password })).unwrap();
+    } catch (error) {
+      Alert.alert("Đăng nhập thất bại", error || "Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -77,9 +82,15 @@ export default function Login({ navigation }) {
             />
           </View>
 
-          <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin}>
+          <TouchableOpacity
+            style={[styles.primaryBtn, status === "pending" && { opacity: 0.65 }]}
+            onPress={handleLogin}
+            disabled={status === "pending"}
+          >
             <LinearGradient colors={gradients.forest} style={styles.primaryGradient}>
-              <Text style={styles.primaryText}>Đăng nhập</Text>
+              <Text style={styles.primaryText}>
+                {status === "pending" ? "Đang đăng nhập..." : "Đăng nhập"}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

@@ -1,6 +1,9 @@
+import { Platform } from "react-native";
+
 // ─── API Base URL ───────────────────────────────────────────────────────────
-// TODO: Cập nhật URL backend khi hoàn thiện
-export const API_BASE_URL = "http://localhost:3000";
+const DEV_API_HOST = Platform.OS === "android" ? "10.0.2.2" : "localhost";
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? `http://${DEV_API_HOST}:3000/api`;
 
 // ─── Screen Names ───────────────────────────────────────────────────────────
 export const SCREENS = {

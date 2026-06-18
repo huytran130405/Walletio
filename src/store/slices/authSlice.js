@@ -1,159 +1,139 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { API_BASE_URL } from "../../utils/constants";
+import { authService } from "../../services/authService";
 
-// ── Mock user mặc định ────────────────────────────────────────────────────────
-const MOCK_USER = {
-  id:    "u1",
-  name:  "Minh Nhật",
-  email: "minhnhat@walletio.app",
-  avatar: null,
+const normalizeUser = (profile = {}, fallbackEmail = "") => {
+  const email = profile.email ?? fallbackEmail;
+  const name = profile.full_name ?? profile.name ?? email?.split("@")[0] ?? "Người dùng";
+  return {
+    id: profile.id ?? null,
+    name,
+    email,
+    avatar: profile.avatar_url ?? profile.avatar ?? null,
+  };
 };
 
 const initialState = {
-  user:   null,
-  token:  null,
-  status: "",         // "pending" | "success" | "fail"
+  user: null,
+  token: null,
+  status: "",
+  error: null,
 };
-
-// ─── Thunks ────────────────────────────────────────────────────────────────
 
 export const loginUser = createAsyncThunk(
   "/auth/loginUser",
-  async ({ username, password }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      const data = await fetch(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      }).then((res) => res.json());
-      return data;
-    } catch {
-      // Offline fallback: mock login thành công
-      return { user: MOCK_USER, token: "mock-token" };
+      const token = await authService.login({ email, password });
+      if (!token) throw new Error("Backend không trả về access token.");
+      const profile = await authService.getProfile(token);
+      return { user: normalizeUser(profile, email), token };
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const registerUser = createAsyncThunk(
   "/auth/registerUser",
-  async ({ name, email, password }) => {
+  async ({ name, email, password }, { rejectWithValue }) => {
     try {
-      const data = await fetch(`${API_BASE_URL}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      }).then((res) => res.json());
-      return data;
-    } catch {
-      return { user: { ...MOCK_USER, name, email }, token: "mock-token" };
+      const data = await authService.register({ name, email, password });
+      const token = data?.session?.access_token ?? data?.access_token ?? null;
+      if (!token) {
+        throw new Error("Đăng ký thành công. Vui lòng xác nhận email rồi đăng nhập.");
+      }
+      const profile = await authService.getProfile(token);
+      return { user: normalizeUser(profile, email), token };
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const updateProfile = createAsyncThunk(
   "/auth/updateProfile",
-  async (profileData, { getState }) => {
+  async (profileData, { getState, rejectWithValue }) => {
     try {
-      const { token } = getState().auth;
-      const data = await fetch(`${API_BASE_URL}/profile`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(profileData),
-      }).then((res) => res.json());
-      return data;
-    } catch {
-      return { ...getState().auth.user, ...profileData };
+      const { token, user } = getState().auth;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const data = await authService.updateProfile(token, {
+        full_name: profileData.name ?? profileData.full_name,
+        avatar_url: profileData.avatar_url ?? profileData.avatar,
+      });
+      return normalizeUser(data, user?.email);
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
-export const logoutUser = createAsyncThunk(
-  "/auth/logoutUser",
-  async () => {
-    try {
-      await fetch(`${API_BASE_URL}/logout`, { method: "POST" });
-    } catch {}
-    return null;
-  }
-);
-
-// ─── Slice ─────────────────────────────────────────────────────────────────
+export const logoutUser = createAsyncThunk("/auth/logoutUser", async () => null);
 
 export const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    loginLocal: (state, action) => {
-      const { email, name } = action.payload;
-      state.user = {
-        ...MOCK_USER,
-        email,
-        name: name || email?.split("@")[0] || MOCK_USER.name,
-      };
-      state.token = "mock-token";
-      state.status = "success";
-    },
-    registerLocal: (state, action) => {
-      const { name, email } = action.payload;
-      state.user = {
-        ...MOCK_USER,
-        id: "u_" + Date.now(),
-        name,
-        email,
-      };
-      state.token = "mock-token";
-      state.status = "success";
-    },
-    updateProfileLocal: (state, action) => {
-      state.user = { ...(state.user || MOCK_USER), ...action.payload };
-      state.status = "success";
-    },
     logoutLocal: (state) => {
       state.user = null;
       state.token = null;
       state.status = "";
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // loginUser
-      .addCase(loginUser.pending,   (state) => { state.status = "pending"; })
+      .addCase(loginUser.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.status = "success";
-        state.user   = action.payload.user;
-        state.token  = action.payload.token;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
       })
-      .addCase(loginUser.rejected,  (state) => { state.status = "fail"; })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
 
-      // registerUser
-      .addCase(registerUser.pending,   (state) => { state.status = "pending"; })
+      .addCase(registerUser.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.status = "success";
-        state.user   = action.payload.user;
-        state.token  = action.payload.token;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
       })
-      .addCase(registerUser.rejected,  (state) => { state.status = "fail"; })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
 
-      // updateProfile
-      .addCase(updateProfile.pending,   (state) => { state.status = "pending"; })
+      .addCase(updateProfile.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
       .addCase(updateProfile.fulfilled, (state, action) => {
-        state.user   = action.payload;
+        state.user = action.payload;
         state.status = "success";
       })
-      .addCase(updateProfile.rejected,  (state) => { state.status = "fail"; })
-
-      // logoutUser
-      .addCase(logoutUser.pending,   (state) => { state.status = "pending"; })
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.user   = null;
-        state.token  = null;
-        state.status = "";
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
       })
-      .addCase(logoutUser.rejected,  (state) => { state.status = "fail"; });
+
+      .addCase(logoutUser.pending, (state) => {
+        state.status = "pending";
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.status = "";
+        state.error = null;
+      });
   },
 });
 
-// ─── Reducer ───────────────────────────────────────────────────────────────
-
-export const { loginLocal, registerLocal, updateProfileLocal, logoutLocal } = authSlice.actions;
+export const { logoutLocal } = authSlice.actions;
 export const authReducer = authSlice.reducer;
