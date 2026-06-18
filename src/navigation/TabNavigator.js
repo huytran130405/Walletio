@@ -14,7 +14,7 @@ import { typography } from "../theme/typography";
 // Screens
 import BudgetPlanning from "../screens/BudgetPlanning";
 import CreateTransaction from "../screens/CreateTransaction";
-import Statistics from "../screens/Statistics";
+import Analytic from "../screens/Analytic";
 import AccountSettings from "../screens/AccountSettings";
 
 const Tab = createBottomTabNavigator();
@@ -23,7 +23,7 @@ const TAB_CONFIG = [
   { name: "BudgetPlanning", label: "Budget", emoji: "📊" },
   { name: "MyWallets", label: "Ví tiền", emoji: "👛" },
   { name: "CreateTransaction", label: "", emoji: "➕", isFAB: true },
-  { name: "Statistics", label: "Thống kê", emoji: "📈" },
+  { name: "Analytic", label: "Analytic", emoji: "📈" },
   { name: "AccountSettings", label: "Cá nhân", emoji: "👤" },
 ];
 
@@ -93,7 +93,7 @@ export default function TabNavigator() {
       <Tab.Screen name="BudgetPlanning" component={BudgetPlanning} />
       <Tab.Screen name="MyWallets" component={MyWallets} />
       <Tab.Screen name="CreateTransaction" component={CreateTransaction} />
-      <Tab.Screen name="Statistics" component={Statistics} />
+      <Tab.Screen name="Analytic" component={Analytic} />
       <Tab.Screen name="AccountSettings" component={AccountSettings} />
     </Tab.Navigator>
   );
