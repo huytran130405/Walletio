@@ -281,10 +281,20 @@ export default function Analytic() {
   const comparisonMonths = lastThreeMonths.map((monthDate) => {
     const apiMonth = summaryByMonth.get(getMonthKey(monthDate));
     const monthTxs = transactions.filter((tx) => sameMonth(parseTxDate(tx.date), monthDate));
+    const localIncome = monthTxs
+      .filter((tx) => tx.type === "income")
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const localExpense = monthTxs
+      .filter((tx) => tx.type === "expense")
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    // Prefer locally loaded transactions: they update the moment a transaction is
+    // added and stay consistent with the list and donut. The server summary is
+    // only fetched at startup, so it can be stale (e.g. missing income added this
+    // session); fall back to it only for months with no local transactions.
     return {
       label: getMonthShortLabel(monthDate),
-      income: apiMonth?.income ?? monthTxs.filter((tx) => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0),
-      expense: apiMonth?.expense ?? monthTxs.filter((tx) => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0),
+      income: monthTxs.length ? localIncome : apiMonth?.income ?? 0,
+      expense: monthTxs.length ? localExpense : apiMonth?.expense ?? 0,
     };
   });
   const averageIncome = comparisonMonths.reduce((sum, item) => sum + item.income, 0) / comparisonMonths.length;

@@ -29,6 +29,10 @@ export default function EditWalletModal({ navigation, route }) {
   const walletId = route?.params?.walletId;
   const wallet = useSelector((state) => state.wallets.wallets.find((item) => item.id === walletId));
   const [name, setName] = useState(wallet?.name || "");
+  // Load the wallet's current balance (số tiền hiện tại), not the opening balance.
+  const [balance, setBalance] = useState(
+    String(wallet?.balance ?? wallet?.openingBalance ?? 0),
+  );
   const [type, setType] = useState(wallet?.type || "payment");
   const [color, setColor] = useState(wallet?.color || COLORS[0]);
   const [isDefault, setIsDefault] = useState(Boolean(wallet?.isDefault));
@@ -41,10 +45,15 @@ export default function EditWalletModal({ navigation, route }) {
       Alert.alert("Thiếu tên ví", "Vui lòng nhập tên ví.");
       return;
     }
+    if (Number(balance) < 0 || Number.isNaN(Number(balance))) {
+      Alert.alert("Số dư không hợp lệ", "Vui lòng nhập số dư hợp lệ.");
+      return;
+    }
     try {
       await dispatch(updateWallet({
         id: wallet.id,
         name: name.trim(),
+        openingBalance: Number(balance),
         type,
         color,
         icon: selectedType.icon,
@@ -80,6 +89,16 @@ export default function EditWalletModal({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.label}>Tên ví</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Tên ví" placeholderTextColor={colors.textMuted} />
+
+          <Text style={styles.label}>Số dư trong ví</Text>
+          <TextInput
+            style={styles.input}
+            value={balance}
+            onChangeText={setBalance}
+            placeholder="0"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numeric"
+          />
 
           <Text style={styles.label}>Loại ví</Text>
           <View style={styles.typeGrid}>

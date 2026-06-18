@@ -17,26 +17,8 @@ export function ExpenseHistoryRow({ expense }) {
 
   return (
     <View style={styles.row}>
-      <View
-        style={[
-          styles.emotionIcon,
-          { backgroundColor: `${expense.emotionColor ?? colors.primary}18` },
-        ]}
-      >
-        <Ionicons
-          name={expense.emotionIcon ?? "heart-outline"}
-          size={20}
-          color={expense.emotionColor ?? colors.primary}
-        />
-        <Text
-          style={[
-            styles.emotionScore,
-            { color: expense.emotionColor ?? colors.primary },
-          ]}
-          numberOfLines={1}
-        >
-          {expense.emotionScore ?? expense.emotionLabel ?? "0"}
-        </Text>
+      <View style={styles.emotionIcon}>
+        <Text style={styles.emotionEmoji}>{expense.emotionEmoji ?? "🙂"}</Text>
       </View>
 
       <View style={styles.rowBody}>
@@ -153,12 +135,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: spacing.sm,
+    backgroundColor: colors.surfaceAlt,
   },
-  emotionScore: {
-    fontSize: 10,
-    lineHeight: 12,
-    fontFamily: typography.family.bold,
-    marginTop: 1,
+  emotionEmoji: {
+    fontSize: 24,
   },
   rowBody: {
     flex: 1,

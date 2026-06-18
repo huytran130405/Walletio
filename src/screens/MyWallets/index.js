@@ -10,7 +10,6 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   deleteWallet,
   fetchWalletSummary,
-  selectTotalBalance,
 } from "../../store/slices/walletSlice";
 import WalletHeroCard from "./components/WalletHeroCard";
 import WalletQuickActions from "./components/WalletQuickActions";
@@ -26,21 +25,20 @@ export default function MyWallets({ navigation }) {
   const transactions = useSelector((state) => state.transactions.transactions);
   const categories = useSelector((state) => state.categories.categories);
   const emotions = useSelector((state) => state.emotions.emotions);
-  const totalBalance = useSelector((state) => selectTotalBalance(state));
 
   const expenseHistory = useMemo(
     () => enrichExpenses({ transactions, wallets, categories, emotions }),
     [categories, emotions, transactions, wallets],
   );
 
-  const trackedExpense = expenseHistory.reduce(
-    (sum, transaction) => sum + transaction.amount,
-    0,
-  );
-  const paymentBalance = wallets.reduce(
-    (sum, wallet) => sum + wallet.balance,
-    0,
-  );
+  // Split wallets by type: "payment" wallets are spendable balances, "tracking"
+  // wallets (e.g. savings) are monitored separately. Tổng tài sản = both combined,
+  // so a savings wallet is never lumped into the Thanh toán figure.
+  const paymentWallets = wallets.filter((wallet) => wallet.type === "payment");
+  const trackingWallets = wallets.filter((wallet) => wallet.type === "tracking");
+  const paymentBalance = paymentWallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+  const trackedBalance = trackingWallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+  const totalBalance = paymentBalance + trackedBalance;
 
   const handleDelete = (wallet) => {
     Alert.alert("Xoá ví", `Bạn có chắc muốn xoá ví "${wallet.name}"?`, [
@@ -70,20 +68,33 @@ export default function MyWallets({ navigation }) {
           <WalletHeroCard
             totalBalance={totalBalance}
             paymentBalance={paymentBalance}
-            trackedExpense={trackedExpense}
+            trackedBalance={trackedBalance}
           />
         </Animated.View>
 
         <WalletQuickActions navigation={navigation} />
 
         <PaymentWalletSection
-          wallets={wallets}
+          wallets={paymentWallets}
           onAddWallet={() => navigation.navigate("AddWallet")}
           onOpenWallet={(wallet) =>
             navigation.navigate("WalletDetail", { walletId: wallet.id })
           }
           onDeleteWallet={handleDelete}
         />
+
+        {trackingWallets.length > 0 && (
+          <PaymentWalletSection
+            title="Ví theo dõi"
+            emptyText="Chưa có ví theo dõi nào."
+            showAdd={false}
+            wallets={trackingWallets}
+            onOpenWallet={(wallet) =>
+              navigation.navigate("WalletDetail", { walletId: wallet.id })
+            }
+            onDeleteWallet={handleDelete}
+          />
+        )}
 
         <ExpenseHistorySection
           expenses={expenseHistory.slice(0, 5)}

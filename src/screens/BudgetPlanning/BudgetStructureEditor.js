@@ -67,9 +67,7 @@ export default function BudgetStructureEditor({ navigation, route }) {
   const groups = useSelector((state) =>
     state.spendingGroups.groups.filter((group) => group.id !== "group_income"),
   );
-  const categories = useSelector((state) =>
-    state.categories.categories.filter((category) => category.type === "expense"),
-  );
+  const categories = useSelector((state) => state.categories.categories);
 
   const [monthlyAmount, setMonthlyAmount] = useState(
     monthlyBudget.amount ? String(monthlyBudget.amount) : "",
@@ -153,7 +151,6 @@ export default function BudgetStructureEditor({ navigation, route }) {
       await dispatch(
         addCategory({
           name,
-          type: "expense",
           icon: categoryIcon,
           color: categoryColor,
           groupId: selectedGroupId,

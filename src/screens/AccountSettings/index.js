@@ -17,18 +17,17 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useDispatch, useSelector } from "react-redux";
-import { logoutUser, updateProfile } from "../../store/slices/authSlice";
+import { logoutUser, updateProfile, changePassword, uploadAvatar } from "../../store/slices/authSlice";
+import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
 
+// Only fields backed by the profile/auth data. `email` comes from the auth
+// session and is read-only; `name` is the single editable profile field.
 const FIELDS = [
-  { key: "name",    icon: "person-outline",      label: "Họ và tên",      placeholder: "Nhập họ và tên" },
-  { key: "email",   icon: "mail-outline",         label: "Email",           placeholder: "Nhập email", keyboardType: "email-address" },
-  { key: "phone",   icon: "call-outline",         label: "Số điện thoại",  placeholder: "Nhập số điện thoại", keyboardType: "phone-pad" },
-  { key: "dob",     icon: "calendar-outline",     label: "Ngày sinh",      placeholder: "DD/MM/YYYY" },
-  { key: "gender",  icon: "transgender-outline",  label: "Giới tính",      placeholder: "Nam / Nữ / Khác" },
-  { key: "address", icon: "location-outline",     label: "Địa chỉ",        placeholder: "Nhập địa chỉ" },
+  { key: "name",  icon: "person-outline", label: "Họ và tên", placeholder: "Nhập họ và tên", editable: true },
+  { key: "email", icon: "mail-outline",   label: "Email",      placeholder: "Email", keyboardType: "email-address", editable: false },
 ];
 
 /* ─── Main Screen ───────────────────────────────────────────── */
@@ -41,23 +40,20 @@ export default function AccountSettings() {
   const [editing, setEditing]   = useState(false);
   const [avatarUri, setAvatarUri] = useState(user?.avatar || null);
   const [form, setForm] = useState({
-    name:    user?.name    || "",
-    email:   user?.email   || "",
-    phone:   user?.phone   || "",
-    dob:     user?.dob     || "",
-    gender:  user?.gender  || "",
-    address: user?.address || "",
+    name:  user?.name  || "",
+    email: user?.email || "",
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [pwd, setPwd] = useState({ old: "", new: "", confirm: "" });
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
   useEffect(() => {
     setAvatarUri(user?.avatar || null);
     setForm({
-      name:    user?.name    || "",
-      email:   user?.email   || "",
-      phone:   user?.phone   || "",
-      dob:     user?.dob     || "",
-      gender:  user?.gender  || "",
-      address: user?.address || "",
+      name:  user?.name  || "",
+      email: user?.email || "",
     });
   }, [user]);
 
@@ -69,57 +65,97 @@ export default function AccountSettings() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      base64: true,
     });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setAvatarUri(result.assets[0].uri);
+    if (result.canceled || !result.assets?.[0]?.base64) return;
+
+    // Optimistic preview, then upload to the bucket (replaces the existing avatar).
+    setAvatarUri(result.assets[0].uri);
+    try {
+      await dispatch(uploadAvatar(result.assets[0].base64)).unwrap();
+      showToast("Đã cập nhật ảnh đại diện.", "success");
+    } catch (error) {
+      setAvatarUri(user?.avatar || null);
+      showToast(error || "Không tải được ảnh đại diện.", "error");
     }
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      Alert.alert("Lỗi", "Họ và tên không được để trống.");
+      showToast("Họ và tên không được để trống.", "error");
       return;
     }
     try {
-      await dispatch(
-        updateProfile({
-          name: form.name.trim(),
-          avatar_url: avatarUri,
-        }),
-      ).unwrap();
+      // Avatar is uploaded separately on pick; here we only persist the name.
+      await dispatch(updateProfile({ name: form.name.trim() })).unwrap();
       setEditing(false);
-      Alert.alert("Thành công", "Thông tin tài khoản đã được cập nhật.");
+      showToast("Thông tin tài khoản đã được cập nhật.", "success");
     } catch (error) {
-      Alert.alert("Không lưu được hồ sơ", error || "Vui lòng thử lại.");
+      showToast(error || "Không lưu được hồ sơ.", "error");
     }
   };
 
   const handleCancel = () => {
     setForm({
-      name:    user?.name    || "",
-      email:   user?.email   || "",
-      phone:   user?.phone   || "",
-      dob:     user?.dob     || "",
-      gender:  user?.gender  || "",
-      address: user?.address || "",
+      name:  user?.name  || "",
+      email: user?.email || "",
     });
     setAvatarUri(user?.avatar || null);
     setEditing(false);
   };
 
+  const handleChangePassword = async () => {
+    if (!pwd.old || !pwd.new) {
+      showToast("Vui lòng nhập mật khẩu cũ và mới.", "error");
+      return;
+    }
+    if (pwd.new.length < 6) {
+      showToast("Mật khẩu mới cần ít nhất 6 ký tự.", "error");
+      return;
+    }
+    if (pwd.new !== pwd.confirm) {
+      showToast("Xác nhận mật khẩu không khớp.", "error");
+      return;
+    }
+    try {
+      await dispatch(
+        changePassword({ oldPassword: pwd.old, newPassword: pwd.new }),
+      ).unwrap();
+      setPwd({ old: "", new: "", confirm: "" });
+      setShowPassword(false);
+      showToast("Đổi mật khẩu thành công.", "success");
+    } catch (error) {
+      showToast(error || "Đổi mật khẩu thất bại.", "error");
+    }
+  };
+
   const handleLogout = () => {
+    const doLogout = () => dispatch(logoutUser());
+    // On React Native Web, Alert.alert ignores button callbacks, so confirm via window.
+    if (Platform.OS === "web") {
+      if (typeof window === "undefined" || window.confirm("Bạn có chắc muốn đăng xuất?")) {
+        doLogout();
+      }
+      return;
+    }
     Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
       { text: "Huỷ", style: "cancel" },
-      { text: "Đăng xuất", style: "destructive", onPress: () => dispatch(logoutUser()) },
+      { text: "Đăng xuất", style: "destructive", onPress: doLogout },
     ]);
   };
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast((p) => ({ ...p, visible: false }))}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -204,7 +240,7 @@ export default function AccountSettings() {
                   </View>
                   <View style={styles.fieldContent}>
                     <Text style={styles.fieldLabel}>{field.label}</Text>
-                    {editing ? (
+                    {editing && field.editable ? (
                       <TextInput
                         style={styles.fieldInput}
                         value={form[field.key]}
@@ -220,7 +256,7 @@ export default function AccountSettings() {
                       </Text>
                     )}
                   </View>
-                  {editing && (
+                  {editing && field.editable && (
                     <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                   )}
                 </View>
@@ -229,6 +265,71 @@ export default function AccountSettings() {
                 )}
               </View>
             ))}
+          </Animated.View>
+
+          {/* ── Security: change password ── */}
+          <Animated.View entering={FadeInUp.delay(150).duration(480)} style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Bảo mật</Text>
+          </Animated.View>
+          <Animated.View entering={FadeInUp.delay(180).duration(480)} style={styles.infoCard}>
+            <TouchableOpacity
+              style={styles.fieldRow}
+              onPress={() => setShowPassword((prev) => !prev)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.fieldIcon}>
+                <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={styles.fieldValue}>Đổi mật khẩu</Text>
+              </View>
+              <Ionicons
+                name={showPassword ? "chevron-up" : "chevron-forward"}
+                size={16}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
+
+            {showPassword && (
+              <View style={styles.passwordForm}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={pwd.old}
+                  onChangeText={(v) => setPwd((p) => ({ ...p, old: v }))}
+                  placeholder="Mật khẩu hiện tại"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+                <TextInput
+                  style={styles.passwordInput}
+                  value={pwd.new}
+                  onChangeText={(v) => setPwd((p) => ({ ...p, new: v }))}
+                  placeholder="Mật khẩu mới (tối thiểu 6 ký tự)"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+                <TextInput
+                  style={styles.passwordInput}
+                  value={pwd.confirm}
+                  onChangeText={(v) => setPwd((p) => ({ ...p, confirm: v }))}
+                  placeholder="Xác nhận mật khẩu mới"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.savePasswordBtn, status === "pending" && { opacity: 0.6 }]}
+                  onPress={handleChangePassword}
+                  disabled={status === "pending"}
+                >
+                  <Text style={styles.savePasswordText}>
+                    {status === "pending" ? "Đang lưu..." : "Cập nhật mật khẩu"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </Animated.View>
 
           {/* ── Cancel button (only in edit mode) ── */}
@@ -466,6 +567,35 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.divider,
+  },
+
+  // Password form
+  passwordForm: {
+    paddingBottom: spacing.base,
+    gap: spacing.sm,
+  },
+  passwordInput: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.base,
+    paddingHorizontal: spacing.base,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    fontFamily: typography.family.medium,
+  },
+  savePasswordBtn: {
+    marginTop: spacing.xs,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.base,
+    alignItems: "center",
+  },
+  savePasswordText: {
+    color: colors.textInverse,
+    fontSize: typography.fontSize.base,
+    fontFamily: typography.family.bold,
   },
 
   // Cancel

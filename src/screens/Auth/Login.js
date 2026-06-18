@@ -8,12 +8,12 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../store/slices/authSlice";
+import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
@@ -23,25 +23,35 @@ export default function Login({ navigation }) {
   const { status } = useSelector((state) => state.auth);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+
+  const showToast = (message, type = "error") => setToast({ visible: true, message, type });
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập email và mật khẩu.");
+      showToast("Vui lòng nhập email và mật khẩu.");
       return;
     }
     if (password.length < 6) {
-      Alert.alert("Mật khẩu ngắn", "Mật khẩu cần ít nhất 6 ký tự.");
+      showToast("Mật khẩu cần ít nhất 6 ký tự.");
       return;
     }
     try {
       await dispatch(loginUser({ email: email.trim(), password })).unwrap();
+      // Success notification is shown by AppNavigator once the session is set.
     } catch (error) {
-      Alert.alert("Đăng nhập thất bại", error || "Vui lòng thử lại.");
+      showToast(error || "Đăng nhập thất bại. Vui lòng thử lại.");
     }
   };
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast((p) => ({ ...p, visible: false }))}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.container}

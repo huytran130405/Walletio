@@ -56,10 +56,27 @@ export const updateProfile = createAsyncThunk(
     try {
       const { token, user } = getState().auth;
       if (!token) throw new Error("Bạn cần đăng nhập lại.");
-      const data = await authService.updateProfile(token, {
-        full_name: profileData.name ?? profileData.full_name,
-        avatar_url: profileData.avatar_url ?? profileData.avatar,
-      });
+      // Only send provided fields so a name update never clears the avatar.
+      const body = {};
+      const name = profileData.name ?? profileData.full_name;
+      if (name !== undefined) body.full_name = name;
+      const avatar = profileData.avatar_url ?? profileData.avatar;
+      if (avatar !== undefined) body.avatar_url = avatar;
+      const data = await authService.updateProfile(token, body);
+      return normalizeUser(data, user?.email);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const uploadAvatar = createAsyncThunk(
+  "/auth/uploadAvatar",
+  async (imageBase64, { getState, rejectWithValue }) => {
+    try {
+      const { token, user } = getState().auth;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const data = await authService.uploadAvatar(token, imageBase64);
       return normalizeUser(data, user?.email);
     } catch (error) {
       return rejectWithValue(error.message);
@@ -132,6 +149,19 @@ export const authSlice = createSlice({
         state.status = "success";
       })
       .addCase(updateProfile.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
+
+      .addCase(uploadAvatar.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(uploadAvatar.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.status = "success";
+      })
+      .addCase(uploadAvatar.rejected, (state, action) => {
         state.status = "fail";
         state.error = action.payload ?? action.error.message;
       })

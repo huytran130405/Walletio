@@ -12,17 +12,16 @@ import { safeIonicon } from "../../utils/icons";
  * Props:
  *   selected : string
  *   onSelect : (category) => void
- *   type     : "income" | "expense" | undefined
+ *
+ * Categories are not income/expense-typed; the transaction's direction
+ * decides that, so every category is selectable here.
  */
-export default function CategoryPicker({ selected, onSelect, type }) {
+export default function CategoryPicker({ selected, onSelect }) {
   const categories = useSelector((state) => state.categories.categories);
-  const visibleCategories = type
-    ? categories.filter((category) => category.type === type || category.type === "both")
-    : categories;
 
   return (
     <View style={styles.grid}>
-      {visibleCategories.map((cat) => {
+      {categories.map((cat) => {
         const isSelected = selected === cat.name || selected === cat.id;
         return (
           <TouchableOpacity

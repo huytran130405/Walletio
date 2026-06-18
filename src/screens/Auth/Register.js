@@ -8,16 +8,15 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
 import { registerUser } from "../../store/slices/authSlice";
+import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
-import GoogleAuthButton from "./components/GoogleAuthButton";
 
 export default function Register({ navigation }) {
   const dispatch = useDispatch();
@@ -25,14 +24,17 @@ export default function Register({ navigation }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+
+  const showToast = (message, type = "error") => setToast({ visible: true, message, type });
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập đủ tên, email và mật khẩu.");
+      showToast("Vui lòng nhập đủ tên, email và mật khẩu.");
       return;
     }
     if (password.length < 6) {
-      Alert.alert("Mật khẩu ngắn", "Mật khẩu cần ít nhất 6 ký tự.");
+      showToast("Mật khẩu cần ít nhất 6 ký tự.");
       return;
     }
     try {
@@ -40,16 +42,18 @@ export default function Register({ navigation }) {
         registerUser({ name: name.trim(), email: email.trim(), password }),
       ).unwrap();
     } catch (error) {
-      Alert.alert("Tạo tài khoản", error || "Vui lòng thử lại.");
+      showToast(error || "Tạo tài khoản thất bại. Vui lòng thử lại.");
     }
-  };
-
-  const handleGoogleRegister = () => {
-    Alert.alert("Chưa hỗ trợ", "Backend hiện chưa có API đăng nhập Google.");
   };
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast((p) => ({ ...p, visible: false }))}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.container}
@@ -115,13 +119,7 @@ export default function Register({ navigation }) {
             </LinearGradient>
           </TouchableOpacity>
 
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>hoặc</Text>
-            <View style={styles.dividerLine} />
-          </View>
 
-          <GoogleAuthButton label="Tạo tài khoản bằng Google" onPress={handleGoogleRegister} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

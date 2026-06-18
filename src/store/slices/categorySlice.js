@@ -1,59 +1,61 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { categoryService } from "../../services/categoryService";
 
-const DEFAULT_CATEGORIES = [
-  { id: "cat_food", name: "Ăn uống", type: "expense", icon: "restaurant-outline", color: "#D8A85B", groupId: "group_essentials" },
-  { id: "cat_transport", name: "Di chuyển", type: "expense", icon: "car-outline", color: "#4E93B6", groupId: "group_mobility" },
-  { id: "cat_shopping", name: "Mua sắm", type: "expense", icon: "bag-outline", color: "#A855F7", groupId: "group_wants" },
-  { id: "cat_entertainment", name: "Giải trí", type: "expense", icon: "game-controller-outline", color: "#C78365", groupId: "group_wants" },
-  { id: "cat_health", name: "Sức khoẻ", type: "expense", icon: "medkit-outline", color: "#2F9E69", groupId: "group_essentials" },
-  { id: "cat_education", name: "Giáo dục", type: "expense", icon: "school-outline", color: "#3F7891", groupId: "group_growth" },
-  { id: "cat_home", name: "Nhà cửa", type: "expense", icon: "home-outline", color: "#8FBF8F", groupId: "group_essentials" },
-  { id: "cat_salary", name: "Lương", type: "income", icon: "briefcase-outline", color: "#2F9E69", groupId: "group_income" },
-  { id: "cat_bonus", name: "Thưởng", type: "income", icon: "gift-outline", color: "#D69E2E", groupId: "group_income" },
-  { id: "cat_other", name: "Khác", type: "expense", icon: "apps-outline", color: "#8B6A4E", groupId: "group_other" },
+// Visual palette only (icon/color) — cycled through for categories that
+// have no icon/color of their own. NOT a source of category data.
+const CATEGORY_VISUALS = [
+  { icon: "restaurant-outline", color: "#D8A85B" },
+  { icon: "car-outline", color: "#4E93B6" },
+  { icon: "bag-outline", color: "#A855F7" },
+  { icon: "game-controller-outline", color: "#C78365" },
+  { icon: "medkit-outline", color: "#2F9E69" },
+  { icon: "school-outline", color: "#3F7891" },
+  { icon: "home-outline", color: "#8FBF8F" },
+  { icon: "apps-outline", color: "#8B6A4E" },
 ];
 
 const initialState = {
-  categories: DEFAULT_CATEGORIES,
+  categories: [],
   status: "",
   error: null,
 };
 
-const fallbackVisual = (index = 0) => DEFAULT_CATEGORIES[index % DEFAULT_CATEGORIES.length];
+const fallbackVisual = (index = 0) => CATEGORY_VISUALS[index % CATEGORY_VISUALS.length];
 
-const parseCategoryMeta = (icon) => {
-  if (!icon) return {};
-  try {
-    const meta = JSON.parse(icon);
-    return meta && typeof meta === "object" ? meta : { icon };
-  } catch {
-    return { icon };
+// Pre-migration rows packed { icon, color, ... } as JSON into the `icon` column.
+// Parse it so those categories still render a valid icon/color.
+const parseLegacyMeta = (icon) => {
+  if (typeof icon === "string" && icon.trim().startsWith("{")) {
+    try {
+      const meta = JSON.parse(icon);
+      return meta && typeof meta === "object" ? meta : null;
+    } catch {
+      return null;
+    }
   }
+  return null;
 };
 
 const normalizeCategory = (category = {}, index = 0, fallback = {}) => {
   const visual = fallbackVisual(index);
-  const meta = parseCategoryMeta(category.icon);
+  const legacy = parseLegacyMeta(category.icon);
+  const icon = (legacy ? legacy.icon : category.icon) ?? fallback.icon ?? visual.icon ?? "apps-outline";
+  const color = (legacy ? legacy.color : category.color) ?? fallback.color ?? visual.color ?? "#2F7D5A";
   return {
     id: category.id ?? fallback.id,
     userId: category.user_id ?? fallback.userId,
     name: category.name ?? fallback.name ?? "Khác",
-    type: meta.type ?? fallback.type ?? "expense",
-    icon: meta.icon ?? fallback.icon ?? visual.icon ?? "apps-outline",
-    color: meta.color ?? fallback.color ?? visual.color ?? "#2F7D5A",
-    groupId: meta.groupId ?? fallback.groupId ?? "group_other",
+    icon,
+    color,
+    groupId: category.spending_group_id ?? fallback.groupId ?? null,
   };
 };
 
 const toCategoryPayload = (category = {}) => ({
   name: category.name,
-  icon: JSON.stringify({
-    icon: category.icon ?? "apps-outline",
-    type: category.type ?? "expense",
-    color: category.color ?? "#2F7D5A",
-    groupId: category.groupId ?? "group_other",
-  }),
+  icon: category.icon ?? "apps-outline",
+  color: category.color ?? "#2F7D5A",
+  spending_group_id: category.groupId ?? null,
 });
 
 export const fetchCategories = createAsyncThunk(
@@ -119,10 +121,9 @@ export const categorySlice = createSlice({
     addCategoryLocal: (state, action) => {
       state.categories.push({
         id: "cat_" + Date.now(),
-        type: "expense",
         icon: "apps-outline",
         color: "#2F7D5A",
-        groupId: "group_other",
+        groupId: null,
         ...action.payload,
       });
     },
@@ -142,7 +143,7 @@ export const categorySlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.categories = action.payload.length ? action.payload : DEFAULT_CATEGORIES;
+        state.categories = action.payload;
         state.status = "success";
       })
       .addCase(fetchCategories.rejected, (state, action) => {

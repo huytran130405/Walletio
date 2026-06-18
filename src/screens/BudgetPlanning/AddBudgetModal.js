@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  createBudget,
   selectBudgetSummary,
   selectMonthlyBudget,
   upsertBudgetAllocation,
@@ -43,10 +44,9 @@ export default function AddBudgetModal({ navigation, route }) {
   const month = route?.params?.month ?? now.getMonth() + 1;
   const year = route?.params?.year ?? now.getFullYear();
 
-  const categories = useSelector((state) =>
-    state.categories.categories.filter((category) => category.type === "expense"),
-  );
+  const categories = useSelector((state) => state.categories.categories);
   const groups = useSelector((state) => state.spendingGroups.groups);
+  const wallets = useSelector((state) => state.wallets.wallets);
   const monthlyBudget = useSelector((state) =>
     selectMonthlyBudget(state, month, year),
   );
@@ -85,7 +85,11 @@ export default function AddBudgetModal({ navigation, route }) {
     (sum, budget) => sum + (budget.limit ?? 0),
     0,
   );
-  const remainingBefore = (monthlyBudget.amount ?? 0) - allocated;
+  // Available pool = sum of payment wallet balances, matching the Budget screen.
+  const paymentTotal = wallets
+    .filter((wallet) => wallet.type === "payment")
+    .reduce((sum, wallet) => sum + (wallet.balance ?? 0), 0);
+  const remainingBefore = paymentTotal - allocated;
 
   const selectCategory = (category) => {
     const existingBudget = budgetSummary.find(
@@ -106,15 +110,19 @@ export default function AddBudgetModal({ navigation, route }) {
       Alert.alert("Thiếu số tiền", "Vui lòng nhập số tiền phân bổ hợp lệ.");
       return;
     }
-    if (!monthlyBudget.id) {
-      Alert.alert("Chưa có budget", "Backend chưa có budget tháng này để phân bổ.");
-      return;
-    }
 
     try {
+      // Ensure a budget exists for this month, creating one on the fly if needed,
+      // so the user can always allocate without a pre-seeded budget row.
+      let budgetId = monthlyBudget.id;
+      if (!budgetId) {
+        const created = await dispatch(createBudget({ month, year })).unwrap();
+        budgetId = created.id;
+      }
+
       await dispatch(
         upsertBudgetAllocation({
-          budgetId: monthlyBudget.id,
+          budgetId,
           id: initialBudget?.id,
           month,
           year,

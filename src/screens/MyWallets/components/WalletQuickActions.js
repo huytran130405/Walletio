@@ -20,13 +20,6 @@ const ACTIONS = [
     route: "TransferMoney",
     color: colors.info,
   },
-  {
-    key: "profile",
-    label: "Chỉnh hồ sơ",
-    icon: "person-circle-outline",
-    route: "EditProfile",
-    color: colors.accent,
-  },
 ];
 
 export default function WalletQuickActions({ navigation }) {

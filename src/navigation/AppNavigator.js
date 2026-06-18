@@ -1,11 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useDispatch, useSelector } from "react-redux";
+import Toast from "../components/common/Toast";
 import TabNavigator from "./TabNavigator";
 import { fetchAnalyticsBalance, fetchAnalyticsSummary } from "../store/slices/analyticSlice";
-import { fetchBudgets } from "../store/slices/budgetSlice";
+import { fetchBudgets, fetchBudgetAllocations } from "../store/slices/budgetSlice";
 import { fetchCategories } from "../store/slices/categorySlice";
 import { fetchSpendingGroups } from "../store/slices/spendingGroupSlice";
+import { fetchEmotions } from "../store/slices/emotionSlice";
 import { fetchTransactions } from "../store/slices/transactionSlice";
 import { fetchTransfers } from "../store/slices/transferSlice";
 import { fetchWallets, fetchWalletSummary } from "../store/slices/walletSlice";
@@ -38,6 +41,20 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigator() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
+  const [authToast, setAuthToast] = useState({ visible: false, message: "", type: "success" });
+  const prevUserRef = useRef(null);
+
+  // Notify on successful login/registration (when the session first becomes active).
+  useEffect(() => {
+    if (!prevUserRef.current && user) {
+      setAuthToast({
+        visible: true,
+        message: `Đăng nhập thành công. Xin chào, ${user.name || "bạn"}!`,
+        type: "success",
+      });
+    }
+    prevUserRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -45,12 +62,14 @@ export default function AppNavigator() {
       await Promise.allSettled([
         dispatch(fetchCategories()),
         dispatch(fetchSpendingGroups()),
+        dispatch(fetchEmotions()),
         dispatch(fetchWallets()),
         dispatch(fetchWalletSummary()),
       ]);
       dispatch(fetchTransactions());
       dispatch(fetchTransfers());
       dispatch(fetchBudgets());
+      dispatch(fetchBudgetAllocations());
       dispatch(fetchAnalyticsSummary(new Date().getFullYear()));
       dispatch(fetchAnalyticsBalance());
     };
@@ -67,7 +86,14 @@ export default function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <View style={{ flex: 1 }}>
+      <Toast
+        visible={authToast.visible}
+        message={authToast.message}
+        type={authToast.type}
+        onHide={() => setAuthToast((p) => ({ ...p, visible: false }))}
+      />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabNavigator} />
 
       <Stack.Screen name="Transactions" component={Transactions} />
@@ -117,6 +143,7 @@ export default function AppNavigator() {
         component={BudgetStructureEditor}
         options={{ presentation: "modal" }}
       />
-    </Stack.Navigator>
+      </Stack.Navigator>
+    </View>
   );
 }

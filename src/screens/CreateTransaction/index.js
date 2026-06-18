@@ -9,8 +9,9 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector, useStore } from "react-redux";
 import { createTransaction, updateTransaction } from "../../store/slices/transactionSlice";
+import { selectBudgetSummary } from "../../store/slices/budgetSlice";
 import { fetchWallets, fetchWalletSummary } from "../../store/slices/walletSlice";
 import BottomSheet from "../../components/common/BottomSheet";
 import CategoryPicker from "../../components/common/CategoryPicker";
@@ -33,20 +34,6 @@ const fmtDateFull = (d) => {
   return `${day}/${month}/${year}`;
 };
 
-// Category icon mapping
-const CAT_ICONS = {
-  "Ăn uống": "🍔",
-  "Di chuyển": "🚗",
-  "Mua sắm": "🛍️",
-  "Sức khoẻ": "💊",
-  "Giải trí": "🎮",
-  "Nhà cửa": "🏠",
-  "Lương": "💰",
-  "Tiết kiệm": "🐷",
-  "Điện thoại": "📱",
-  "Nhà hàng": "🍽️",
-  "Cafe": "☕",
-};
 // Parse "dd/mm/yyyy" -> Date
 const parseDateStr = (str) => {
   if (!str) return new Date();
@@ -161,11 +148,15 @@ const cal = StyleSheet.create({
   dayTextToday: { color: colors.accent, fontFamily: typography.family.bold },
 });
 
+const fmtMoney = (value = 0) => `${Math.round(value).toLocaleString("vi-VN")}đ`;
+
 export default function CreateTransaction({ navigation, route }) {
   const dispatch = useDispatch();
+  const store = useStore();
   const { status } = useSelector((s) => s.transactions);
   const wallets = useSelector((s) => s.wallets.wallets);
   const categories = useSelector((s) => s.categories.categories);
+  const emotions = useSelector((s) => s.emotions.emotions);
 
   const editData = route?.params?.editData;
   const initialType = route?.params?.initialType ?? "expense";
@@ -175,6 +166,7 @@ export default function CreateTransaction({ navigation, route }) {
   const [note, setNote] = useState(editData?.note ?? "");
   const [category, setCategory] = useState(editData?.category ?? null);
   const [categoryId, setCategoryId] = useState(editData?.categoryId ?? "");
+  const [emotionId, setEmotionId] = useState(editData?.emotionId ?? null);
   const [walletId, setWalletId] = useState(
     route?.params?.walletId ?? editData?.walletId ?? wallets[0]?.id ?? ""
   );
@@ -183,6 +175,7 @@ export default function CreateTransaction({ navigation, route }) {
   );
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showCatPicker, setShowCatPicker] = useState(false);
+  const [showEmotionPicker, setShowEmotionPicker] = useState(false);
   const [showWalletPick, setShowWalletPick] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
@@ -195,6 +188,7 @@ export default function CreateTransaction({ navigation, route }) {
       setNote(editData.note ?? "");
       setCategory(editData.category ?? null);
       setCategoryId(editData.categoryId ?? "");
+      setEmotionId(editData.emotionId ?? null);
       setWalletId(editData.walletId ?? wallets[0]?.id ?? "");
     } else if (route?.params?.walletId) {
       setWalletId(route.params.walletId);
@@ -203,6 +197,7 @@ export default function CreateTransaction({ navigation, route }) {
 
   const selectedWallet = wallets.find((w) => w.id === walletId) ?? wallets[0];
   const selectedCategory = categories.find((c) => c.id === categoryId || c.name === category);
+  const selectedEmotion = emotions.find((e) => e.id === emotionId);
   const dateLabel = fmtDate(date);
   const dateLabelFull = fmtDateFull(date);
 
@@ -222,6 +217,36 @@ export default function CreateTransaction({ navigation, route }) {
     setAmount((p) => (p === "0" ? key : (p + key).length > 12 ? p : p + key));
   };
 
+  // After saving an expense, inspect the category's budget for the transaction's
+  // month. Reads fresh state so the just-saved row is counted. Matching is lenient
+  // (id OR normalized name) because a transaction may carry the local category id
+  // while the budget carries the backend uuid.
+  const getBudgetStatus = () => {
+    if (type !== "expense") return null;
+    const norm = (s) => (s ?? "").trim().toLowerCase();
+    const catId = selectedCategory?.id ?? categoryId ?? null;
+    const catName = norm(category ?? selectedCategory?.name);
+    if (!catId && !catName) return { kind: "no-category" };
+
+    const summary = selectBudgetSummary(
+      store.getState(),
+      date.getMonth() + 1,
+      date.getFullYear(),
+    );
+    const row = summary.find(
+      (b) =>
+        (catId && b.categoryId === catId) ||
+        (catName && norm(b.category) === catName),
+    );
+    if (!row || !(row.limit > 0)) return { kind: "no-budget" };
+    return {
+      kind: row.spent > row.limit ? "over" : "under",
+      name: row.category ?? category,
+      spent: row.spent,
+      limit: row.limit,
+    };
+  };
+
   const doSave = async (andContinue = false) => {
     if (isSaving) return;
 
@@ -236,6 +261,7 @@ export default function CreateTransaction({ navigation, route }) {
       note,
       categoryId: selectedCategory?.id ?? categoryId,
       category: category ?? "",
+      emotionId: selectedEmotion?.id ?? emotionId,
       walletId: selectedWallet?.id,
       date: dateLabelFull,
       expense_date: dateLabelFull,
@@ -250,25 +276,42 @@ export default function CreateTransaction({ navigation, route }) {
       }
       dispatch(fetchWallets());
       dispatch(fetchWalletSummary());
+
+      // Build the toast. "over" is the real feature; the other branches are a
+      // temporary diagnostic so we can see why a warning may not appear.
+      const st = getBudgetStatus();
+      let msg = editData ? "Đã cập nhật!" : "Đã lưu giao dịch!";
+      let msgType = "success";
+      let holdLonger = false;
+      if (st?.kind === "over") {
+        msg = `⚠️ Vượt ngân sách "${st.name}"! Đã chi ${fmtMoney(st.spent)} / ${fmtMoney(st.limit)}.`;
+        msgType = "error";
+        holdLonger = true;
+      } else if (st?.kind === "under") {
+        msg = `Đã lưu. "${st.name}": ${fmtMoney(st.spent)}/${fmtMoney(st.limit)} (chưa vượt).`;
+        msgType = "info";
+      } else if (st?.kind === "no-budget") {
+        msg = "Đã lưu. Danh mục này chưa có ngân sách tháng này.";
+        msgType = "info";
+      }
+
       if (andContinue) {
         setAmount("0");
         setNote("");
         setCategory(null);
         setCategoryId("");
-        showToast("Đã lưu! Tiếp tục thêm...");
+        setEmotionId(null);
+        showToast(msg, msgType);
       } else {
-        showToast(editData ? "Đã cập nhật!" : "Đã lưu giao dịch!");
-        setTimeout(() => navigation.goBack(), 900);
+        showToast(msg, msgType);
+        setTimeout(() => navigation.goBack(), holdLonger ? 2200 : 1200);
       }
     } catch (error) {
       Alert.alert("Không lưu được giao dịch", error || "Vui lòng thử lại.");
     }
   };
 
-  const getCategoryEmoji = () => {
-    if (!selectedCategory) return "🥚";
-    return CAT_ICONS[selectedCategory.name] || "🟡";
-  };
+  const getEmotionEmoji = () => selectedEmotion?.emoji ?? "🙂";
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -322,14 +365,17 @@ export default function CreateTransaction({ navigation, route }) {
 
       {/* ── Center area ── */}
       <View style={styles.centerArea}>
-        {/* Category icon */}
+        {/* Emotion icon */}
         <TouchableOpacity
           style={styles.catIconWrap}
-          onPress={() => setShowCatPicker(true)}
+          onPress={() => setShowEmotionPicker(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.catEmoji}>{getCategoryEmoji()}</Text>
+          <Text style={styles.catEmoji}>{getEmotionEmoji()}</Text>
         </TouchableOpacity>
+        <Text style={styles.emotionHint}>
+          {selectedEmotion?.label ?? "Cảm xúc?"}
+        </Text>
 
         {/* Amount */}
         <Text style={[styles.amountDisplay, { color: amountColor }]}>
@@ -425,17 +471,8 @@ export default function CreateTransaction({ navigation, route }) {
             </View>
           </View>
 
-          {/* Right col: action buttons */}
+          {/* Right col: action button */}
           <View style={styles.numpadRight}>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnBlue, isSaving && styles.actionBtnDisabled]}
-              onPress={() => doSave(true)}
-              disabled={isSaving}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={22} color="#fff" />
-              <Text style={styles.actionBtnText}>Lưu &{"\n"}tiếp tục</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionBtnGreen, isSaving && styles.actionBtnDisabled]}
               onPress={() => doSave(false)}
@@ -443,7 +480,7 @@ export default function CreateTransaction({ navigation, route }) {
               activeOpacity={0.8}
             >
               <Ionicons name="checkmark" size={22} color="#fff" />
-              <Text style={styles.actionBtnText}>Lưu &{"\n"}đóng</Text>
+              <Text style={styles.actionBtnText}>Lưu</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -453,13 +490,39 @@ export default function CreateTransaction({ navigation, route }) {
       <BottomSheet visible={showCatPicker} onClose={() => setShowCatPicker(false)} title="Chọn danh mục" snapHeight={520}>
         <CategoryPicker
           selected={categoryId || category}
-          type={type}
           onSelect={(selected) => {
             setCategory(selected.name);
             setCategoryId(selected.id);
             setShowCatPicker(false);
           }}
         />
+      </BottomSheet>
+
+      <BottomSheet visible={showEmotionPicker} onClose={() => setShowEmotionPicker(false)} title="Bạn cảm thấy thế nào?" snapHeight={280}>
+        <View style={styles.emotionRow}>
+          {emotions.map((emo) => {
+            const active = emotionId === emo.id;
+            return (
+              <TouchableOpacity
+                key={emo.id}
+                style={[styles.emotionItem, active && styles.emotionItemActive]}
+                onPress={() => {
+                  setEmotionId(active ? null : emo.id);
+                  setShowEmotionPicker(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.emotionEmoji}>{emo.emoji}</Text>
+                <Text
+                  style={[styles.emotionLabel, active && styles.emotionLabelActive]}
+                  numberOfLines={1}
+                >
+                  {emo.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </BottomSheet>
 
       <BottomSheet visible={showWalletPick} onClose={() => setShowWalletPick(false)} title="Chọn ví tiền" snapHeight={360}>
@@ -575,6 +638,42 @@ const styles = StyleSheet.create({
   },
   catEmoji: {
     fontSize: typography.fontSize.xxxl,
+  },
+  emotionHint: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    marginBottom: spacing.base,
+  },
+  emotionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+    paddingTop: spacing.sm,
+  },
+  emotionItem: {
+    alignItems: "center",
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: borderRadius.lg,
+    width: "18%",
+  },
+  emotionItemActive: {
+    backgroundColor: colors.surfaceAlt,
+  },
+  emotionEmoji: {
+    fontSize: typography.fontSize.xxl,
+    marginBottom: spacing.xxs,
+  },
+  emotionLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.family.medium,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+  emotionLabelActive: {
+    color: colors.primary,
+    fontFamily: typography.family.semiBold,
   },
   amountDisplay: {
     fontSize: typography.fontSize.h1,

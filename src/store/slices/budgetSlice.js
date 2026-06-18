@@ -41,6 +41,30 @@ export const fetchBudgets = createAsyncThunk(
   },
 );
 
+const normalizeAllocation = (row = {}) => ({
+  id: row.id,
+  budgetId: row.budget_id,
+  categoryId: row.category_id,
+  limit: Number(row.allocated ?? 0),
+  month: Number(row.month ?? currentMonth),
+  year: Number(row.year ?? currentYear),
+  period: "monthly",
+});
+
+export const fetchBudgetAllocations = createAsyncThunk(
+  "/budget/fetchAllocations",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const data = await budgetService.getAllocations(token);
+      return Array.isArray(data) ? data.map(normalizeAllocation) : [];
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const updateBudget = createAsyncThunk(
   "/budget/updateBudget",
   async ({ id, budgetId, name, amount, totalIncome, month, year }, { getState, rejectWithValue }) => {
@@ -79,14 +103,14 @@ export const upsertBudgetAllocation = createAsyncThunk(
       if (!isBackendId(allocation.categoryId)) {
         throw new Error("Backend chưa có API danh mục để lấy categoryId thật cho phân bổ.");
       }
-      await budgetService.upsertAllocation(token, {
+      const response = await budgetService.upsertAllocation(token, {
         budgetId: allocation.budgetId,
         categoryId: allocation.categoryId,
         amount: Number(allocation.limit ?? allocation.amount ?? 0),
       });
       return {
         ...allocation,
-        id: allocation.id ?? `${allocation.budgetId}_${allocation.categoryId}`,
+        id: response?.data?.id ?? allocation.id ?? `${allocation.budgetId}_${allocation.categoryId}`,
         limit: Number(allocation.limit ?? allocation.amount ?? 0),
       };
     } catch (error) {
@@ -97,8 +121,16 @@ export const upsertBudgetAllocation = createAsyncThunk(
 
 export const createBudget = createAsyncThunk(
   "/budget/createBudget",
-  async (_, { rejectWithValue }) =>
-    rejectWithValue("Backend hiện chưa có API tạo budget từ mobile."),
+  async ({ month, year, name } = {}, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const response = await budgetService.create(token, { month, year, name });
+      return normalizeMonthlyBudget(response?.data ?? response);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
 );
 
 export const deleteBudget = createAsyncThunk(
@@ -183,6 +215,17 @@ export const budgetSlice = createSlice({
         state.error = action.payload ?? action.error.message;
       })
 
+      .addCase(fetchBudgetAllocations.fulfilled, (state, action) => {
+        // The DB is the source of truth for allocations; upserts persist
+        // immediately and reappear here, so a full replace stays consistent.
+        state.budgets = action.payload;
+        state.status = "success";
+      })
+      .addCase(fetchBudgetAllocations.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
+
       .addCase(updateBudget.pending, (state) => {
         state.status = "pending";
         state.error = null;
@@ -217,6 +260,16 @@ export const budgetSlice = createSlice({
         state.error = action.payload ?? action.error.message;
       })
 
+      .addCase(createBudget.fulfilled, (state, action) => {
+        const index = state.monthlyBudgets.findIndex(
+          (budget) =>
+            budget.month === action.payload.month &&
+            budget.year === action.payload.year,
+        );
+        if (index !== -1) state.monthlyBudgets[index] = action.payload;
+        else state.monthlyBudgets.push(action.payload);
+        state.status = "success";
+      })
       .addCase(createBudget.rejected, (state, action) => {
         state.status = "fail";
         state.error = action.payload ?? action.error.message;

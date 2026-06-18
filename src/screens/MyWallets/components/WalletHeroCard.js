@@ -10,7 +10,7 @@ const formatMoney = (amount = 0) => `${amount.toLocaleString("vi-VN")}đ`;
 export default function WalletHeroCard({
   totalBalance = 0,
   paymentBalance = 0,
-  trackedExpense = 0,
+  trackedBalance = 0,
 }) {
   return (
     <View style={styles.wrap}>
@@ -60,7 +60,7 @@ export default function WalletHeroCard({
                 minimumFontScale={0.74}
                 numberOfLines={1}
               >
-                {formatMoney(trackedExpense)}
+                {formatMoney(trackedBalance)}
               </Text>
             </View>
           </View>

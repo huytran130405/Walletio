@@ -55,14 +55,8 @@ export const enrichExpenses = ({
         categoryIcon: category?.icon,
         categoryColor: category?.color,
         walletName: wallet?.name ?? transaction.walletName ?? "Ví tiền",
-        emotionIcon: emotion?.icon ?? transaction.emotionIcon,
-        emotionColor: emotion?.color ?? transaction.emotionColor,
-        emotionLabel: emotion?.label ?? transaction.emotionLabel,
-        emotionScore:
-          transaction.emotion_score ??
-          transaction.emotionScore ??
-          emotion?.score ??
-          "0",
+        emotionEmoji: emotion?.emoji ?? transaction.emotionEmoji ?? null,
+        emotionLabel: emotion?.label ?? transaction.emotionLabel ?? null,
       };
     })
     .sort(

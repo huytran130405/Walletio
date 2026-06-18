@@ -10,10 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector } from "react-redux";
-import {
-  selectBudgetSummary,
-  selectMonthlyBudget,
-} from "../../store/slices/budgetSlice";
+import { selectBudgetSummary } from "../../store/slices/budgetSlice";
 import { selectExpenseByCategory } from "../../store/slices/transactionSlice";
 import BudgetHeroCard from "./components/BudgetHeroCard";
 import { colors, shadows } from "../../theme/colors";
@@ -49,27 +46,29 @@ export default function BudgetPlanning({ navigation }) {
   });
 
   const { month, year } = selectedDate;
-  const monthlyBudget = useSelector((state) =>
-    selectMonthlyBudget(state, month, year),
-  );
+  const wallets = useSelector((state) => state.wallets.wallets);
   const budgetSummary = useSelector((state) =>
     selectBudgetSummary(state, month, year),
   );
   const expenseByCategory = useSelector((state) =>
     selectExpenseByCategory(state, month, year),
   );
-  const categories = useSelector((state) =>
-    state.categories.categories.filter((category) => category.type === "expense"),
-  );
+  const categories = useSelector((state) => state.categories.categories);
   const groups = useSelector((state) =>
     state.spendingGroups.groups.filter((group) => group.id !== "group_income"),
   );
+
+  // The budget pool auto-sums the balance of every payment wallet, so money is
+  // ready to allocate without manually setting a monthly budget amount.
+  const paymentTotal = wallets
+    .filter((wallet) => wallet.type === "payment")
+    .reduce((sum, wallet) => sum + (wallet.balance ?? 0), 0);
 
   const allocated = budgetSummary.reduce(
     (sum, budget) => sum + (budget.limit ?? 0),
     0,
   );
-  const unallocated = (monthlyBudget.amount ?? 0) - allocated;
+  const unallocated = paymentTotal - allocated;
 
   const listData = useMemo(() => {
     const allocationByCategory = new Map(

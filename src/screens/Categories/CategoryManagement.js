@@ -19,11 +19,6 @@ import { safeIonicon } from "../../utils/icons";
 
 const COLORS = [colors.primary, colors.info, colors.accent, colors.clay, colors.expense, colors.secondaryDark, colors.earth];
 const ICONS = ["restaurant-outline", "car-outline", "bag-outline", "home-outline", "briefcase-outline", "gift-outline", "school-outline", "apps-outline"];
-const TYPES = [
-  { key: "expense", label: "Chi" },
-  { key: "income", label: "Thu" },
-  { key: "both", label: "Cả hai" },
-];
 
 export default function CategoryManagement({ navigation }) {
   const dispatch = useDispatch();
@@ -31,10 +26,9 @@ export default function CategoryManagement({ navigation }) {
   const groups = useSelector((state) => state.spendingGroups.groups);
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState("");
-  const [type, setType] = useState("expense");
   const [color, setColor] = useState(COLORS[0]);
   const [icon, setIcon] = useState(ICONS[0]);
-  const [groupId, setGroupId] = useState("group_other");
+  const [groupId, setGroupId] = useState(null);
 
   const editingCategory = useMemo(
     () => categories.find((category) => category.id === editingId),
@@ -44,16 +38,14 @@ export default function CategoryManagement({ navigation }) {
   const resetForm = () => {
     setEditingId(null);
     setName("");
-    setType("expense");
     setColor(COLORS[0]);
     setIcon(ICONS[0]);
-    setGroupId("group_other");
+    setGroupId(groups[0]?.id ?? null);
   };
 
   const startEdit = (category) => {
     setEditingId(category.id);
     setName(category.name);
-    setType(category.type);
     setColor(category.color);
     setIcon(category.icon);
     setGroupId(category.groupId);
@@ -64,7 +56,7 @@ export default function CategoryManagement({ navigation }) {
       Alert.alert("Thiếu tên", "Vui lòng nhập tên danh mục.");
       return;
     }
-    const payload = { name: name.trim(), type, color, icon, groupId };
+    const payload = { name: name.trim(), color, icon, groupId };
     try {
       if (editingCategory) {
         await dispatch(updateCategory({ id: editingCategory.id, ...payload })).unwrap();
@@ -118,22 +110,6 @@ export default function CategoryManagement({ navigation }) {
             placeholder="Tên danh mục"
             placeholderTextColor={colors.textMuted}
           />
-
-          <Text style={styles.label}>Loại</Text>
-          <View style={styles.segmentRow}>
-            {TYPES.map((item) => {
-              const active = type === item.key;
-              return (
-                <TouchableOpacity
-                  key={item.key}
-                  style={[styles.segmentBtn, active && styles.segmentActive]}
-                  onPress={() => setType(item.key)}
-                >
-                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
 
           <Text style={styles.label}>Nhóm</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
@@ -193,7 +169,7 @@ export default function CategoryManagement({ navigation }) {
             </View>
             <View style={styles.rowInfo}>
               <Text style={styles.rowTitle}>{category.name}</Text>
-              <Text style={styles.rowMeta}>{category.type === "income" ? "Thu nhập" : category.type === "expense" ? "Chi tiêu" : "Thu & chi"} · {groupTitle(category.groupId)}</Text>
+              <Text style={styles.rowMeta}>{groupTitle(category.groupId)}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>

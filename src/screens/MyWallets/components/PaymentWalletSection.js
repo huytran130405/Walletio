@@ -11,20 +11,25 @@ export default function PaymentWalletSection({
   onOpenWallet,
   onAddWallet,
   onDeleteWallet,
+  title = "Ví thanh toán",
+  emptyText = "Chưa có ví thanh toán nào.",
+  showAdd = true,
 }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Ví thanh toán</Text>
+          <Text style={styles.sectionTitle}>{title}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={onAddWallet}
-          activeOpacity={0.78}
-        >
-          <Ionicons name="add" size={18} color={colors.primary} />
-        </TouchableOpacity>
+        {showAdd && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={onAddWallet}
+            activeOpacity={0.78}
+          >
+            <Ionicons name="add" size={18} color={colors.primary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {wallets.map((wallet) => (
@@ -47,7 +52,7 @@ export default function PaymentWalletSection({
       {wallets.length === 0 && (
         <View style={styles.emptyCard}>
           <Ionicons name="wallet-outline" size={24} color={colors.textSecondary} />
-          <Text style={styles.emptyText}>Chưa có ví thanh toán nào.</Text>
+          <Text style={styles.emptyText}>{emptyText}</Text>
         </View>
       )}
     </View>

@@ -1,17 +1,19 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { spendingGroupService } from "../../services/spendingGroupService";
 
-const DEFAULT_GROUPS = [
-  { id: "group_essentials", title: "Thiết yếu", icon: "shield-checkmark-outline", color: "#D85C4A" },
-  { id: "group_mobility", title: "Di chuyển", icon: "navigate-outline", color: "#4E93B6" },
-  { id: "group_wants", title: "Mong muốn", icon: "sparkles-outline", color: "#D8A85B" },
-  { id: "group_growth", title: "Phát triển", icon: "school-outline", color: "#2F9E69" },
-  { id: "group_income", title: "Thu nhập", icon: "trending-up-outline", color: "#2F9E69" },
-  { id: "group_other", title: "Khác", icon: "albums-outline", color: "#8B6A4E" },
+// Visual palette only (icon/color) — cycled through for groups whose
+// description has no icon/color meta. NOT a source of spending-group data.
+const GROUP_VISUALS = [
+  { icon: "shield-checkmark-outline", color: "#D85C4A" },
+  { icon: "navigate-outline", color: "#4E93B6" },
+  { icon: "sparkles-outline", color: "#D8A85B" },
+  { icon: "school-outline", color: "#2F9E69" },
+  { icon: "trending-up-outline", color: "#2F9E69" },
+  { icon: "albums-outline", color: "#8B6A4E" },
 ];
 
 const initialState = {
-  groups: DEFAULT_GROUPS,
+  groups: [],
   status: "",
   error: null,
 };
@@ -26,7 +28,7 @@ const parseDescriptionMeta = (description) => {
   }
 };
 
-const fallbackVisual = (index = 0) => DEFAULT_GROUPS[index % DEFAULT_GROUPS.length];
+const fallbackVisual = (index = 0) => GROUP_VISUALS[index % GROUP_VISUALS.length];
 
 const normalizeSpendingGroup = (group = {}, index = 0, fallback = {}) => {
   const meta = parseDescriptionMeta(group.description);
@@ -133,7 +135,7 @@ export const spendingGroupSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchSpendingGroups.fulfilled, (state, action) => {
-        state.groups = action.payload.length ? action.payload : DEFAULT_GROUPS;
+        state.groups = action.payload;
         state.status = "success";
       })
       .addCase(fetchSpendingGroups.rejected, (state, action) => {
