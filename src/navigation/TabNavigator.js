@@ -13,9 +13,9 @@ import { typography } from "../theme/typography";
 
 // Screens
 import BudgetPlanning from "../screens/BudgetPlanning";
-import CreateTransaction from "../screens/CreateTransaction";
 import Statistics from "../screens/Statistics";
 import AccountSettings from "../screens/AccountSettings";
+
 
 const Tab = createBottomTabNavigator();
 
@@ -41,6 +41,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
         const cfg = TAB_CONFIG[index];
 
         const onPress = () => {
+          if (cfg?.isFAB) {
+            // Dùng getParent() để navigate lên AppNavigator (Stack),
+            // tránh resolve sang tab cùng tên → modal không có tab bar
+            navigation.getParent()?.navigate("CreateTransaction");
+            return;
+          }
           const event = navigation.emit({
             type: "tabPress",
             target: route.key,
@@ -92,7 +98,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen name="BudgetPlanning" component={BudgetPlanning} />
       <Tab.Screen name="MyWallets" component={MyWallets} />
-      <Tab.Screen name="CreateTransaction" component={CreateTransaction} />
+      <Tab.Screen name="CreateTransaction" component={() => <View />} />
       <Tab.Screen name="Statistics" component={Statistics} />
       <Tab.Screen name="AccountSettings" component={AccountSettings} />
     </Tab.Navigator>
