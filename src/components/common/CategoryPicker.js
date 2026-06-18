@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { colors } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 /**
  * CategoryPicker – grid chọn hạng mục từ Redux local state.
@@ -31,7 +32,7 @@ export default function CategoryPicker({ selected, onSelect, type }) {
             activeOpacity={0.7}
           >
             <View style={[styles.iconWrap, { backgroundColor: `${cat.color}22` }]}>
-              <Ionicons name={cat.icon || "apps-outline"} size={24} color={cat.color || colors.primary} />
+              <Ionicons name={safeIonicon(cat.icon, "apps-outline")} size={24} color={cat.color || colors.primary} />
             </View>
             <Text
               style={[styles.label, isSelected && styles.labelSelected]}

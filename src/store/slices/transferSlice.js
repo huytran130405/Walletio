@@ -61,6 +61,20 @@ export const createTransfer = createAsyncThunk(
   },
 );
 
+export const deleteTransfer = createAsyncThunk(
+  "/transfer/deleteTransfer",
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      await transferService.delete(token, id);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const transferSlice = createSlice({
   name: "transfers",
   initialState,
@@ -74,7 +88,7 @@ export const transferSlice = createSlice({
         }),
       );
     },
-    deleteTransfer: (state, action) => {
+    deleteTransferLocal: (state, action) => {
       state.transfers = state.transfers.filter((transfer) => transfer.id !== action.payload);
     },
   },
@@ -104,9 +118,22 @@ export const transferSlice = createSlice({
       .addCase(createTransfer.rejected, (state, action) => {
         state.status = "fail";
         state.error = action.payload ?? action.error.message;
+      })
+
+      .addCase(deleteTransfer.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(deleteTransfer.fulfilled, (state, action) => {
+        state.transfers = state.transfers.filter((transfer) => transfer.id !== action.payload);
+        state.status = "success";
+      })
+      .addCase(deleteTransfer.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
       });
   },
 });
 
-export const { addTransfer, deleteTransfer } = transferSlice.actions;
+export const { addTransfer, deleteTransferLocal } = transferSlice.actions;
 export const transferReducer = transferSlice.reducer;

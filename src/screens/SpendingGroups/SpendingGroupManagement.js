@@ -15,6 +15,7 @@ import { addSpendingGroup, deleteSpendingGroup, updateSpendingGroup } from "../.
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 const COLORS = [colors.primary, colors.info, colors.accent, colors.clay, colors.expense, colors.secondaryDark, colors.earth];
 const ICONS = ["shield-checkmark-outline", "navigate-outline", "sparkles-outline", "school-outline", "trending-up-outline", "albums-outline"];
@@ -41,24 +42,38 @@ export default function SpendingGroupManagement({ navigation }) {
     setColor(group.color);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert("Thiếu tên nhóm", "Vui lòng nhập tên nhóm chi tiêu.");
       return;
     }
     const payload = { title: title.trim(), icon, color };
-    if (editingId) {
-      dispatch(updateSpendingGroup({ id: editingId, ...payload }));
-    } else {
-      dispatch(addSpendingGroup(payload));
+    try {
+      if (editingId) {
+        await dispatch(updateSpendingGroup({ id: editingId, ...payload })).unwrap();
+      } else {
+        await dispatch(addSpendingGroup(payload)).unwrap();
+      }
+      resetForm();
+    } catch (error) {
+      Alert.alert("Không lưu được nhóm", error || "Vui lòng thử lại.");
     }
-    resetForm();
   };
 
   const handleDelete = (group) => {
-    Alert.alert("Xoá nhóm", `Xoá nhóm "${group.title}" khỏi dữ liệu local?`, [
+    Alert.alert("Xoá nhóm", `Xoá nhóm "${group.title}"?`, [
       { text: "Huỷ", style: "cancel" },
-      { text: "Xoá", style: "destructive", onPress: () => dispatch(deleteSpendingGroup(group.id)) },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await dispatch(deleteSpendingGroup(group.id)).unwrap();
+          } catch (error) {
+            Alert.alert("Không xoá được nhóm", error || "Vui lòng thử lại.");
+          }
+        },
+      },
     ]);
   };
 
@@ -123,7 +138,7 @@ export default function SpendingGroupManagement({ navigation }) {
             onLongPress={() => handleDelete(group)}
           >
             <View style={[styles.rowIcon, { backgroundColor: `${group.color}22` }]}>
-              <Ionicons name={group.icon || "albums-outline"} size={22} color={group.color || colors.primary} />
+              <Ionicons name={safeIonicon(group.icon, "albums-outline")} size={22} color={group.color || colors.primary} />
             </View>
             <View style={styles.rowInfo}>
               <Text style={styles.rowTitle}>{group.title}</Text>

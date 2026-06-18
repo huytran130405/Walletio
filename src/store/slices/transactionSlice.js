@@ -138,8 +138,16 @@ export const updateTransaction = createAsyncThunk(
 
 export const deleteTransaction = createAsyncThunk(
   "/transaction/deleteTransaction",
-  async (_, { rejectWithValue }) =>
-    rejectWithValue("Backend hiện chưa có API xoá giao dịch."),
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      await transactionService.delete(token, id);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
 );
 
 export const transactionSlice = createSlice({
@@ -205,6 +213,16 @@ export const transactionSlice = createSlice({
         state.error = action.payload ?? action.error.message;
       })
 
+      .addCase(deleteTransaction.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(deleteTransaction.fulfilled, (state, action) => {
+        state.transactions = state.transactions.filter(
+          (transaction) => transaction.id !== action.payload,
+        );
+        state.status = "success";
+      })
       .addCase(deleteTransaction.rejected, (state, action) => {
         state.status = "fail";
         state.error = action.payload ?? action.error.message;

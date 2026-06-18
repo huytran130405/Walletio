@@ -3,7 +3,7 @@ import { walletService } from "../../services/walletService";
 import { transferService } from "../../services/transferService";
 
 const walletVisual = (wallet, index = 0) => {
-  const payment = wallet.type === "payment";
+  const payment = toWalletType(wallet.type) === "payment";
   return {
     icon: payment ? "card-outline" : "analytics-outline",
     color: payment ? "#2F9E69" : "#4E93B6",
@@ -11,14 +11,23 @@ const walletVisual = (wallet, index = 0) => {
   };
 };
 
+const toWalletType = (type = "payment") =>
+  ["payment", "cash", "bank", "ewallet"].includes(type) ? "payment" : "tracking";
+
 const normalizeWallet = (wallet = {}, index = 0) => ({
   id: wallet.wallet_id ?? wallet.id,
   userId: wallet.user_id,
   name: wallet.name ?? "Ví",
-  type: wallet.type ?? "payment",
+  type: toWalletType(wallet.type),
   openingBalance: Number(wallet.opening_balance ?? 0),
   balance: Number(wallet.balance ?? wallet.opening_balance ?? 0),
   ...walletVisual(wallet, index),
+});
+
+const toWalletPayload = (wallet = {}) => ({
+  name: wallet.name,
+  type: toWalletType(wallet.type),
+  opening_balance: Number(wallet.openingBalance ?? wallet.opening_balance ?? wallet.balance ?? 0),
 });
 
 const initialState = {
@@ -49,6 +58,49 @@ export const fetchWalletSummary = createAsyncThunk(
       const token = getState().auth.token;
       if (!token) throw new Error("Bạn cần đăng nhập lại.");
       return await walletService.getSummary(token);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const addWallet = createAsyncThunk(
+  "/wallet/addWallet",
+  async (wallet, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const data = await walletService.create(token, toWalletPayload(wallet));
+      return normalizeWallet(data?.data ?? data);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const updateWallet = createAsyncThunk(
+  "/wallet/updateWallet",
+  async ({ id, ...updates }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      const current = getState().wallets.wallets.find((wallet) => wallet.id === id);
+      const data = await walletService.update(token, id, toWalletPayload({ ...current, ...updates }));
+      return normalizeWallet(data?.data ?? data, 0);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const deleteWallet = createAsyncThunk(
+  "/wallet/deleteWallet",
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      await walletService.delete(token, id);
+      return id;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -154,6 +206,49 @@ export const walletSlice = createSlice({
           payment: Number(action.payload?.payment ?? 0),
           tracking: Number(action.payload?.tracking ?? 0),
         };
+      })
+
+      .addCase(addWallet.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(addWallet.fulfilled, (state, action) => {
+        state.wallets.push(action.payload);
+        state.status = "success";
+      })
+      .addCase(addWallet.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
+
+      .addCase(updateWallet.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(updateWallet.fulfilled, (state, action) => {
+        const index = state.wallets.findIndex((wallet) => wallet.id === action.payload.id);
+        if (index !== -1) state.wallets[index] = { ...state.wallets[index], ...action.payload };
+        state.status = "success";
+      })
+      .addCase(updateWallet.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
+
+      .addCase(deleteWallet.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(deleteWallet.fulfilled, (state, action) => {
+        state.wallets = state.wallets.filter((wallet) => wallet.id !== action.payload);
+        if (state.wallets.length > 0 && !state.wallets.some((wallet) => wallet.isDefault)) {
+          state.wallets[0].isDefault = true;
+        }
+        state.status = "success";
+      })
+      .addCase(deleteWallet.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
       })
 
       .addCase(transferBetweenWallets.pending, (state) => {

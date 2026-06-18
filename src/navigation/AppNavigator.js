@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import TabNavigator from "./TabNavigator";
 import { fetchAnalyticsBalance, fetchAnalyticsSummary } from "../store/slices/analyticSlice";
 import { fetchBudgets } from "../store/slices/budgetSlice";
+import { fetchCategories } from "../store/slices/categorySlice";
+import { fetchSpendingGroups } from "../store/slices/spendingGroupSlice";
 import { fetchTransactions } from "../store/slices/transactionSlice";
 import { fetchTransfers } from "../store/slices/transferSlice";
 import { fetchWallets, fetchWalletSummary } from "../store/slices/walletSlice";
@@ -39,13 +41,20 @@ export default function AppNavigator() {
 
   useEffect(() => {
     if (!user) return;
-    dispatch(fetchWallets());
-    dispatch(fetchWalletSummary());
-    dispatch(fetchTransactions());
-    dispatch(fetchTransfers());
-    dispatch(fetchBudgets());
-    dispatch(fetchAnalyticsSummary(new Date().getFullYear()));
-    dispatch(fetchAnalyticsBalance());
+    const hydrate = async () => {
+      await Promise.allSettled([
+        dispatch(fetchCategories()),
+        dispatch(fetchSpendingGroups()),
+        dispatch(fetchWallets()),
+        dispatch(fetchWalletSummary()),
+      ]);
+      dispatch(fetchTransactions());
+      dispatch(fetchTransfers());
+      dispatch(fetchBudgets());
+      dispatch(fetchAnalyticsSummary(new Date().getFullYear()));
+      dispatch(fetchAnalyticsBalance());
+    };
+    hydrate();
   }, [dispatch, user]);
 
   if (!user) {

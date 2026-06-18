@@ -22,6 +22,7 @@ import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 const COLORS = [
   colors.primary,
@@ -118,22 +119,26 @@ export default function BudgetStructureEditor({ navigation, route }) {
     }
   };
 
-  const createGroup = () => {
+  const createGroup = async () => {
     const title = groupTitle.trim();
     if (!title) {
       Alert.alert("Thiếu tên đầu mục", "Vui lòng nhập tên spending group.");
       return;
     }
-    dispatch(addSpendingGroup({ title, icon: groupIcon, color: groupColor }));
-    setGroupTitle("");
-    setToast({
-      visible: true,
-      message: `Đã tạo đầu mục "${title}".`,
-      type: "success",
-    });
+    try {
+      await dispatch(addSpendingGroup({ title, icon: groupIcon, color: groupColor })).unwrap();
+      setGroupTitle("");
+      setToast({
+        visible: true,
+        message: `Đã tạo đầu mục "${title}".`,
+        type: "success",
+      });
+    } catch (error) {
+      Alert.alert("Không tạo được đầu mục", error || "Vui lòng thử lại.");
+    }
   };
 
-  const createCategory = () => {
+  const createCategory = async () => {
     const name = categoryName.trim();
     if (!name) {
       Alert.alert("Thiếu tên danh mục", "Vui lòng nhập tên category.");
@@ -144,21 +149,25 @@ export default function BudgetStructureEditor({ navigation, route }) {
       return;
     }
 
-    dispatch(
-      addCategory({
-        name,
-        type: "expense",
-        icon: categoryIcon,
-        color: categoryColor,
-        groupId: selectedGroupId,
-      }),
-    );
-    setCategoryName("");
-    setToast({
-      visible: true,
-      message: `Đã tạo danh mục "${name}".`,
-      type: "success",
-    });
+    try {
+      await dispatch(
+        addCategory({
+          name,
+          type: "expense",
+          icon: categoryIcon,
+          color: categoryColor,
+          groupId: selectedGroupId,
+        }),
+      ).unwrap();
+      setCategoryName("");
+      setToast({
+        visible: true,
+        message: `Đã tạo danh mục "${name}".`,
+        type: "success",
+      });
+    } catch (error) {
+      Alert.alert("Không tạo được danh mục", error || "Vui lòng thử lại.");
+    }
   };
 
   const groupCategoryCount = (groupId) =>
@@ -254,7 +263,7 @@ export default function BudgetStructureEditor({ navigation, route }) {
                   activeOpacity={0.78}
                 >
                   <Ionicons
-                    name={group.icon}
+                    name={safeIonicon(group.icon, "albums-outline")}
                     size={17}
                     color={active ? group.color : colors.textSecondary}
                   />

@@ -8,4 +8,6 @@ export const authService = {
   getProfile: (token) => fetchAPI("/profile", { token }),
   updateProfile: (token, profileData) =>
     fetchAPI("/profile", { method: "PATCH", token, body: profileData }),
+  changePassword: (token, data) =>
+    fetchAPI("/auth/password", { method: "PUT", token, body: data }),
 };

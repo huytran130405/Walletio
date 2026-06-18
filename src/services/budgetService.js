@@ -6,4 +6,6 @@ export const budgetService = {
     fetchAPI("/budgets", { method: "PATCH", token, body: data }),
   upsertAllocation: (token, data) =>
     fetchAPI("/budgets/allocation", { method: "PUT", token, body: data }),
+  deleteAllocation: (token, id) =>
+    fetchAPI(`/budgets/allocation/${id}`, { method: "DELETE", token }),
 };

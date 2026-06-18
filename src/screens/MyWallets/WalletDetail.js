@@ -11,11 +11,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteWalletLocal } from "../../store/slices/walletSlice";
+import { deleteWallet, fetchWalletSummary } from "../../store/slices/walletSlice";
 import TransactionItem from "../../components/common/TransactionItem";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 export default function WalletDetail({ navigation, route }) {
   const dispatch = useDispatch();
@@ -42,14 +43,19 @@ export default function WalletDetail({ navigation, route }) {
   );
 
   const handleDelete = () => {
-    Alert.alert("Xoá ví", `Xoá ví "${wallet?.name}" khỏi dữ liệu local?`, [
+    Alert.alert("Xoá ví", `Xoá ví "${wallet?.name}"?`, [
       { text: "Huỷ", style: "cancel" },
       {
         text: "Xoá",
         style: "destructive",
-        onPress: () => {
-          dispatch(deleteWalletLocal(wallet.id));
-          navigation.goBack();
+        onPress: async () => {
+          try {
+            await dispatch(deleteWallet(wallet.id)).unwrap();
+            dispatch(fetchWalletSummary());
+            navigation.goBack();
+          } catch (error) {
+            Alert.alert("Không xoá được ví", error || "Vui lòng thử lại.");
+          }
         },
       },
     ]);
@@ -83,7 +89,7 @@ export default function WalletDetail({ navigation, route }) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <LinearGradient colors={gradients.forest} style={styles.hero}>
           <View style={styles.heroIcon}>
-            <Ionicons name={wallet.icon || "wallet-outline"} size={30} color={colors.textInverse} />
+            <Ionicons name={safeIonicon(wallet.icon, "wallet-outline")} size={30} color={colors.textInverse} />
           </View>
           <Text style={styles.heroLabel}>{wallet.isDefault ? "Ví mặc định" : "Ví cá nhân"}</Text>
           <Text style={styles.heroName}>{wallet.name}</Text>

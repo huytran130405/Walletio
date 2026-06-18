@@ -31,9 +31,19 @@ export default function TransferHistory({ navigation, route }) {
   const walletName = (id) => wallets.find((wallet) => wallet.id === id)?.name || "Ví đã xoá";
 
   const handleDelete = (transfer) => {
-    Alert.alert("Xoá chuyển tiền", "Xoá bản ghi chuyển tiền khỏi dữ liệu local?", [
+    Alert.alert("Xoá chuyển tiền", "Xoá bản ghi chuyển tiền?", [
       { text: "Huỷ", style: "cancel" },
-      { text: "Xoá", style: "destructive", onPress: () => dispatch(deleteTransfer(transfer.id)) },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await dispatch(deleteTransfer(transfer.id)).unwrap();
+          } catch (error) {
+            Alert.alert("Không xoá được chuyển tiền", error || "Vui lòng thử lại.");
+          }
+        },
+      },
     ]);
   };
 

@@ -5,6 +5,7 @@ import Animated, { FadeInUp } from "react-native-reanimated";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 const WALLET_ICONS = {
   "Tiền mặt": { icon: "cash-outline", color: "#22C55E", bg: "#E8F4DC" },
@@ -25,7 +26,7 @@ export default function WalletCard({
   isDefault = false,
 }) {
   const iconConfig = WALLET_ICONS[name] ?? WALLET_ICONS["default"];
-  const iconName = icon || iconConfig.icon;
+  const iconName = safeIonicon(icon, iconConfig.icon);
   const iconColor = color || iconConfig.color;
 
   return (

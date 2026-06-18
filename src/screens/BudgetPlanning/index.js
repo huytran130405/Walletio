@@ -19,6 +19,7 @@ import BudgetHeroCard from "./components/BudgetHeroCard";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 const monthNames = [
   "Tháng 1",
@@ -218,7 +219,7 @@ export default function BudgetPlanning({ navigation }) {
         <View style={styles.groupHeader}>
           <View style={[styles.groupIcon, { backgroundColor: `${item.group.color}18` }]}>
             <Ionicons
-              name={item.group.icon}
+              name={safeIonicon(item.group.icon, "albums-outline")}
               size={18}
               color={item.group.color}
             />
@@ -273,7 +274,7 @@ export default function BudgetPlanning({ navigation }) {
             ]}
           >
             <Ionicons
-              name={item.category.icon}
+              name={safeIonicon(item.category.icon, "apps-outline")}
               size={18}
               color={item.category.color}
             />

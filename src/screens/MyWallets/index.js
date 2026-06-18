@@ -8,7 +8,8 @@ import {
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import {
-  deleteWalletLocal,
+  deleteWallet,
+  fetchWalletSummary,
   selectTotalBalance,
 } from "../../store/slices/walletSlice";
 import WalletHeroCard from "./components/WalletHeroCard";
@@ -47,7 +48,14 @@ export default function MyWallets({ navigation }) {
       {
         text: "Xoá",
         style: "destructive",
-        onPress: () => dispatch(deleteWalletLocal(wallet.id)),
+        onPress: async () => {
+          try {
+            await dispatch(deleteWallet(wallet.id)).unwrap();
+            dispatch(fetchWalletSummary());
+          } catch (error) {
+            Alert.alert("Không xoá được ví", error || "Vui lòng thử lại.");
+          }
+        },
       },
     ]);
   };

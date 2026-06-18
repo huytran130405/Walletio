@@ -10,4 +10,6 @@ export const transactionService = {
       token,
       body: data,
     }),
+  delete: (token, id) =>
+    fetchAPI(`/expenses/${id}`, { method: "DELETE", token }),
 };

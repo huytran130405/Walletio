@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { addWalletLocal } from "../../store/slices/walletSlice";
+import { addWallet, fetchWalletSummary } from "../../store/slices/walletSlice";
 import Toast from "../../components/common/Toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors, gradients, shadows } from "../../theme/colors";
@@ -18,15 +18,14 @@ import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
 
 const WALLET_TYPES = [
-  { key: "cash", label: "Tiền mặt", emoji: "💵", icon: "cash-outline", color: colors.primary },
+  { key: "payment", label: "Ví thanh toán", emoji: "💵", icon: "cash-outline", color: colors.primary },
   {
-    key: "bank",
-    label: "Tài khoản ngân hàng",
+    key: "tracking",
+    label: "Ví theo dõi",
     emoji: "🏦",
-    icon: "card-outline",
+    icon: "analytics-outline",
     color: colors.info,
   },
-  { key: "ewallet", label: "Ví điện tử", emoji: "📱", icon: "phone-portrait-outline", color: colors.accent },
 ];
 const COLORS = [
   colors.primary,
@@ -44,7 +43,7 @@ export default function AddWalletModal({ navigation }) {
 
   const [name, setName] = useState("");
   const [balance, setBalance] = useState("0");
-  const [type, setType] = useState("cash");
+  const [type, setType] = useState("payment");
   const [color, setColor] = useState(COLORS[0]);
   const [toast, setToast] = useState({
     visible: false,
@@ -62,24 +61,29 @@ export default function AddWalletModal({ navigation }) {
       return;
     }
 
-    const walletType = WALLET_TYPES.find((t) => t.key === type);
-    await dispatch(
-      addWalletLocal({
-        name: name.trim(),
-        balance: Number(balance),
-        type,
-        color,
-        icon: walletType?.icon ?? "wallet-outline",
-        label: walletType?.label ?? name,
-      }),
-    );
+    try {
+      const walletType = WALLET_TYPES.find((t) => t.key === type);
+      await dispatch(
+        addWallet({
+          name: name.trim(),
+          openingBalance: Number(balance),
+          type,
+          color,
+          icon: walletType?.icon ?? "wallet-outline",
+          label: walletType?.label ?? name,
+        }),
+      ).unwrap();
+      dispatch(fetchWalletSummary());
 
-    setToast({
-      visible: true,
-      message: `Đã thêm ví "${name.trim()}"!`,
-      type: "success",
-    });
-    setTimeout(() => navigation.goBack(), 1200);
+      setToast({
+        visible: true,
+        message: `Đã thêm ví "${name.trim()}"!`,
+        type: "success",
+      });
+      setTimeout(() => navigation.goBack(), 1200);
+    } catch (error) {
+      Alert.alert("Không tạo được ví", error || "Vui lòng thử lại.");
+    }
   };
 
   const selectedType = WALLET_TYPES.find((t) => t.key === type);

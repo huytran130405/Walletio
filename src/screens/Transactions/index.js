@@ -6,6 +6,7 @@ import {
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import { deleteTransaction } from "../../store/slices/transactionSlice";
+import { fetchWallets, fetchWalletSummary } from "../../store/slices/walletSlice";
 import TransactionItem from "../../components/common/TransactionItem";
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
@@ -90,8 +91,10 @@ export default function Transactions({ navigation }) {
           onPress: async () => {
             try {
               await dispatch(deleteTransaction(tx.id)).unwrap();
+              dispatch(fetchWallets());
+              dispatch(fetchWalletSummary());
             } catch (error) {
-              Alert.alert("Chưa hỗ trợ", error || "Backend chưa có API xoá giao dịch.");
+              Alert.alert("Không xoá được giao dịch", error || "Vui lòng thử lại.");
             }
           },
         },

@@ -21,6 +21,7 @@ import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 const COLORS = [
   colors.primary,
@@ -198,7 +199,7 @@ export default function AddBudgetModal({ navigation, route }) {
                   ]}
                 >
                   <Ionicons
-                    name={category.icon}
+                    name={safeIonicon(category.icon, "apps-outline")}
                     size={17}
                     color={category.color}
                   />

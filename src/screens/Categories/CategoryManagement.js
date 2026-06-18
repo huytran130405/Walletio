@@ -15,6 +15,7 @@ import { addCategory, deleteCategory, updateCategory } from "../../store/slices/
 import { colors, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
+import { safeIonicon } from "../../utils/icons";
 
 const COLORS = [colors.primary, colors.info, colors.accent, colors.clay, colors.expense, colors.secondaryDark, colors.earth];
 const ICONS = ["restaurant-outline", "car-outline", "bag-outline", "home-outline", "briefcase-outline", "gift-outline", "school-outline", "apps-outline"];
@@ -58,24 +59,38 @@ export default function CategoryManagement({ navigation }) {
     setGroupId(category.groupId);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert("Thiếu tên", "Vui lòng nhập tên danh mục.");
       return;
     }
     const payload = { name: name.trim(), type, color, icon, groupId };
-    if (editingCategory) {
-      dispatch(updateCategory({ id: editingCategory.id, ...payload }));
-    } else {
-      dispatch(addCategory(payload));
+    try {
+      if (editingCategory) {
+        await dispatch(updateCategory({ id: editingCategory.id, ...payload })).unwrap();
+      } else {
+        await dispatch(addCategory(payload)).unwrap();
+      }
+      resetForm();
+    } catch (error) {
+      Alert.alert("Không lưu được danh mục", error || "Vui lòng thử lại.");
     }
-    resetForm();
   };
 
   const handleDelete = (category) => {
-    Alert.alert("Xoá danh mục", `Xoá "${category.name}" khỏi dữ liệu local?`, [
+    Alert.alert("Xoá danh mục", `Xoá "${category.name}"?`, [
       { text: "Huỷ", style: "cancel" },
-      { text: "Xoá", style: "destructive", onPress: () => dispatch(deleteCategory(category.id)) },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await dispatch(deleteCategory(category.id)).unwrap();
+          } catch (error) {
+            Alert.alert("Không xoá được danh mục", error || "Vui lòng thử lại.");
+          }
+        },
+      },
     ]);
   };
 
@@ -174,7 +189,7 @@ export default function CategoryManagement({ navigation }) {
             onLongPress={() => handleDelete(category)}
           >
             <View style={[styles.rowIcon, { backgroundColor: `${category.color}22` }]}>
-              <Ionicons name={category.icon || "apps-outline"} size={22} color={category.color || colors.primary} />
+              <Ionicons name={safeIonicon(category.icon, "apps-outline")} size={22} color={category.color || colors.primary} />
             </View>
             <View style={styles.rowInfo}>
               <Text style={styles.rowTitle}>{category.name}</Text>

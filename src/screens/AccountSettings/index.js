@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useDispatch, useSelector } from "react-redux";
-import { logoutUser } from "../../store/slices/authSlice";
+import { logoutUser, updateProfile } from "../../store/slices/authSlice";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
@@ -39,7 +39,7 @@ export default function AccountSettings() {
   const transactions = useSelector((s) => s.transactions?.transactions ?? []);
 
   const [editing, setEditing]   = useState(false);
-  const [avatarUri, setAvatarUri] = useState(null);
+  const [avatarUri, setAvatarUri] = useState(user?.avatar || null);
   const [form, setForm] = useState({
     name:    user?.name    || "",
     email:   user?.email   || "",
@@ -48,6 +48,18 @@ export default function AccountSettings() {
     gender:  user?.gender  || "",
     address: user?.address || "",
   });
+
+  useEffect(() => {
+    setAvatarUri(user?.avatar || null);
+    setForm({
+      name:    user?.name    || "",
+      email:   user?.email   || "",
+      phone:   user?.phone   || "",
+      dob:     user?.dob     || "",
+      gender:  user?.gender  || "",
+      address: user?.address || "",
+    });
+  }, [user]);
 
   /* ── Handlers ── */
   const handlePickAvatar = async () => {
@@ -67,14 +79,23 @@ export default function AccountSettings() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) {
       Alert.alert("Lỗi", "Họ và tên không được để trống.");
       return;
     }
-    // TODO: dispatch update user action khi có API
-    setEditing(false);
-    Alert.alert("Thành công", "Thông tin tài khoản đã được cập nhật.");
+    try {
+      await dispatch(
+        updateProfile({
+          name: form.name.trim(),
+          avatar_url: avatarUri,
+        }),
+      ).unwrap();
+      setEditing(false);
+      Alert.alert("Thành công", "Thông tin tài khoản đã được cập nhật.");
+    } catch (error) {
+      Alert.alert("Không lưu được hồ sơ", error || "Vui lòng thử lại.");
+    }
   };
 
   const handleCancel = () => {
@@ -86,6 +107,7 @@ export default function AccountSettings() {
       gender:  user?.gender  || "",
       address: user?.address || "",
     });
+    setAvatarUri(user?.avatar || null);
     setEditing(false);
   };
 

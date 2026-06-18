@@ -12,16 +12,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch, useSelector } from "react-redux";
-import { updateWalletLocal } from "../../store/slices/walletSlice";
+import { fetchWalletSummary, updateWallet } from "../../store/slices/walletSlice";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { borderRadius, spacing } from "../../theme/spacing";
 
 const WALLET_TYPES = [
-  { key: "cash", label: "Tiền mặt", icon: "cash-outline", color: colors.primary },
-  { key: "bank", label: "Ngân hàng", icon: "card-outline", color: colors.info },
-  { key: "ewallet", label: "Ví điện tử", icon: "phone-portrait-outline", color: colors.accent },
-  { key: "saving", label: "Tiết kiệm", icon: "archive-outline", color: colors.secondaryDark },
+  { key: "payment", label: "Ví thanh toán", icon: "cash-outline", color: colors.primary },
+  { key: "tracking", label: "Ví theo dõi", icon: "analytics-outline", color: colors.info },
 ];
 
 const COLORS = [colors.primary, colors.info, colors.accent, colors.clay, colors.expense, colors.secondaryDark, colors.earth];
@@ -31,27 +29,32 @@ export default function EditWalletModal({ navigation, route }) {
   const walletId = route?.params?.walletId;
   const wallet = useSelector((state) => state.wallets.wallets.find((item) => item.id === walletId));
   const [name, setName] = useState(wallet?.name || "");
-  const [type, setType] = useState(wallet?.type || "cash");
+  const [type, setType] = useState(wallet?.type || "payment");
   const [color, setColor] = useState(wallet?.color || COLORS[0]);
   const [isDefault, setIsDefault] = useState(Boolean(wallet?.isDefault));
 
   const selectedType = WALLET_TYPES.find((item) => item.key === type) || WALLET_TYPES[0];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!wallet) return;
     if (!name.trim()) {
       Alert.alert("Thiếu tên ví", "Vui lòng nhập tên ví.");
       return;
     }
-    dispatch(updateWalletLocal({
-      id: wallet.id,
-      name: name.trim(),
-      type,
-      color,
-      icon: selectedType.icon,
-      isDefault,
-    }));
-    navigation.goBack();
+    try {
+      await dispatch(updateWallet({
+        id: wallet.id,
+        name: name.trim(),
+        type,
+        color,
+        icon: selectedType.icon,
+        isDefault,
+      })).unwrap();
+      dispatch(fetchWalletSummary());
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert("Không lưu được ví", error || "Vui lòng thử lại.");
+    }
   };
 
   return (

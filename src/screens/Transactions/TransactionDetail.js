@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useDispatch } from "react-redux";
 import { deleteTransaction } from "../../store/slices/transactionSlice";
+import { fetchWallets, fetchWalletSummary } from "../../store/slices/walletSlice";
 import Toast from "../../components/common/Toast";
 import { colors, gradients, shadows } from "../../theme/colors";
 import { typography } from "../../theme/typography";
@@ -58,12 +59,14 @@ export default function TransactionDetail({ navigation, route }) {
           onPress: async () => {
             try {
               await dispatch(deleteTransaction(transaction.id)).unwrap();
+              dispatch(fetchWallets());
+              dispatch(fetchWalletSummary());
               setToast({ visible: true, message: "Đã xoá giao dịch!", type: "success" });
               setTimeout(() => navigation.goBack(), 1200);
             } catch (error) {
               setToast({
                 visible: true,
-                message: error || "Backend chưa có API xoá giao dịch.",
+                message: error || "Không xoá được giao dịch.",
                 type: "error",
               });
             }

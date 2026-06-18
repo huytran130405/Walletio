@@ -67,6 +67,19 @@ export const updateProfile = createAsyncThunk(
   },
 );
 
+export const changePassword = createAsyncThunk(
+  "/auth/changePassword",
+  async ({ oldPassword, newPassword }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) throw new Error("Bạn cần đăng nhập lại.");
+      return await authService.changePassword(token, { oldPassword, newPassword });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const logoutUser = createAsyncThunk("/auth/logoutUser", async () => null);
 
 export const authSlice = createSlice({
@@ -119,6 +132,18 @@ export const authSlice = createSlice({
         state.status = "success";
       })
       .addCase(updateProfile.rejected, (state, action) => {
+        state.status = "fail";
+        state.error = action.payload ?? action.error.message;
+      })
+
+      .addCase(changePassword.pending, (state) => {
+        state.status = "pending";
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.status = "success";
+      })
+      .addCase(changePassword.rejected, (state, action) => {
         state.status = "fail";
         state.error = action.payload ?? action.error.message;
       })
